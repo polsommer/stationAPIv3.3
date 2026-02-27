@@ -1,11 +1,11 @@
 # Address that the gateway server will listen for connections on
-gateway_address = 127.0.0.1
+gateway_address = 192.168.88.7
 
 # Port the gateway server will listen for connections on
 gateway_port = 5001
 
 # Address that the registrar server will listen for connections on
-registrar_address = 127.0.0.1
+registrar_address = 192.168.88.7
 
 # Port the registrar server will listen for connections on
 registrar_port = 5000
@@ -17,11 +17,11 @@ database_engine = mariadb
 database_path = var/stationapi/stationchat.db
 
 # MariaDB connection fields (required when database_engine=mariadb except password, if applicable)
-database_host = 127.0.0.1
+database_host = mysql73.unoeuro.com
 database_port = 3306
-database_user =
+database_user = swgplus_com
 database_password =
-database_schema =
+database_schema = swgplus_com_db
 
 # When set to true, binds to the config address; otherwise, binds on any interface
 bind_to_ip = false
