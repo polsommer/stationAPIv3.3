@@ -20,7 +20,7 @@ void ChatRoomService::LoadRoomsFromStorage(const std::u16string& baseAddress) {
                  "room_password, room_prefix, room_address, room_attributes, room_max_size, "
                  "room_message_id, created_at, node_level FROM room WHERE room_address LIKE @baseAddress||'%'";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int baseAddressIdx = stmt->BindParameterIndex("@baseAddress");
 
@@ -114,7 +114,7 @@ ChatResultCode ChatRoomService::PersistNewRoom(ChatRoom& room) {
                  "@created_at, @node_level)";
 
     try {
-        auto stmt = db_->Prepare(sql);
+        StatementHandle stmt{db_->Prepare(sql)};
         int creatorIdIdx = stmt->BindParameterIndex("@creator_id");
         int creatorNameIdx = stmt->BindParameterIndex("@creator_name");
         int creatorAddressIdx = stmt->BindParameterIndex("@creator_address");
@@ -220,20 +220,18 @@ std::vector<ChatRoom*> ChatRoomService::GetJoinedRooms(const ChatAvatar * avatar
 void ChatRoomService::DeleteRoom(ChatRoom* room) {
         char sql[] = "DELETE FROM room WHERE id = @id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int idIdx = stmt->BindParameterIndex("@id");
     stmt->BindInt(idIdx, room->dbId_);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatRoomService::LoadModerators(ChatRoom * room) {
         char sql[] = "SELECT moderator_avatar_id FROM room_moderator WHERE room_id = @room_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
     stmt->BindInt(roomIdIdx, room->GetRoomId());
@@ -247,7 +245,7 @@ void ChatRoomService::LoadModerators(ChatRoom * room) {
 void ChatRoomService::PersistModerator(uint32_t moderatorId, uint32_t roomId) {
         char sql[] = "INSERT IGNORE INTO room_moderator (moderator_avatar_id, room_id) VALUES (@moderator_avatar_id, @room_id)";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int moderatorAvatarIdIdx = stmt->BindParameterIndex("@moderator_avatar_id");
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
@@ -255,15 +253,13 @@ void ChatRoomService::PersistModerator(uint32_t moderatorId, uint32_t roomId) {
     stmt->BindInt(moderatorAvatarIdIdx, moderatorId);
     stmt->BindInt(roomIdIdx, roomId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatRoomService::DeleteModerator(uint32_t moderatorId, uint32_t roomId) {
         char sql[] = "DELETE FROM room_moderator WHERE moderator_avatar_id = @moderator_avatar_id AND room_id = @room_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int moderatorAvatarIdIdx = stmt->BindParameterIndex("@moderator_avatar_id");
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
@@ -271,15 +267,13 @@ void ChatRoomService::DeleteModerator(uint32_t moderatorId, uint32_t roomId) {
     stmt->BindInt(moderatorAvatarIdIdx, moderatorId);
     stmt->BindInt(roomIdIdx, roomId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatRoomService::LoadAdministrators(ChatRoom * room) {
         char sql[] = "SELECT administrator_avatar_id FROM room_administrator WHERE room_id = @room_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
     stmt->BindInt(roomIdIdx, room->GetRoomId());
@@ -293,7 +287,7 @@ void ChatRoomService::LoadAdministrators(ChatRoom * room) {
 void ChatRoomService::PersistAdministrator(uint32_t administratorId, uint32_t roomId) {
         char sql[] = "INSERT IGNORE INTO room_administrator (administrator_avatar_id, room_id) VALUES (@administrator_avatar_id, @room_id)";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int administratorAvatarIdIdx = stmt->BindParameterIndex("@administrator_avatar_id");
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
@@ -301,15 +295,13 @@ void ChatRoomService::PersistAdministrator(uint32_t administratorId, uint32_t ro
     stmt->BindInt(administratorAvatarIdIdx, administratorId);
     stmt->BindInt(roomIdIdx, roomId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatRoomService::DeleteAdministrator(uint32_t administratorId, uint32_t roomId) {
         char sql[] = "DELETE FROM room_administrator WHERE administrator_avatar_id = @administrator_avatar_id AND room_id = @room_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int administratorAvatarIdIdx = stmt->BindParameterIndex("@administrator_avatar_id");
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
@@ -317,15 +309,13 @@ void ChatRoomService::DeleteAdministrator(uint32_t administratorId, uint32_t roo
     stmt->BindInt(administratorAvatarIdIdx, administratorId);
     stmt->BindInt(roomIdIdx, roomId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatRoomService::LoadBanned(ChatRoom * room) {
         char sql[] = "SELECT banned_avatar_id FROM room_ban WHERE room_id = @room_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
     stmt->BindInt(roomIdIdx, room->GetRoomId());
@@ -339,7 +329,7 @@ void ChatRoomService::LoadBanned(ChatRoom * room) {
 void ChatRoomService::PersistBanned(uint32_t bannedId, uint32_t roomId) {
         char sql[] = "INSERT IGNORE INTO room_ban (banned_avatar_id, room_id) VALUES (@banned_avatar_id, @room_id)";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int bannedAvatarIdIdx = stmt->BindParameterIndex("@banned_avatar_id");
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
@@ -347,15 +337,13 @@ void ChatRoomService::PersistBanned(uint32_t bannedId, uint32_t roomId) {
     stmt->BindInt(bannedAvatarIdIdx, bannedId);
     stmt->BindInt(roomIdIdx, roomId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatRoomService::DeleteBanned(uint32_t bannedId, uint32_t roomId) {
         char sql[] = "DELETE FROM room_ban WHERE banned_avatar_id = @banned_avatar_id AND room_id = @room_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int bannedAvatarIdIdx = stmt->BindParameterIndex("@banned_avatar_id");
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
@@ -363,7 +351,5 @@ void ChatRoomService::DeleteBanned(uint32_t bannedId, uint32_t roomId) {
     stmt->BindInt(bannedAvatarIdIdx, bannedId);
     stmt->BindInt(roomIdIdx, roomId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
