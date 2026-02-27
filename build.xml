@@ -78,9 +78,9 @@
         </exec>
     </target>
 
-    <target name="run" depends="build" description="Run stationchat binary from the build output.">
-        <exec executable="${build.dir}/chat/stationchat" failonerror="true" osfamily="unix"/>
-        <exec executable="${build.dir}/chat/${build.type}/stationchat.exe" failonerror="true" osfamily="windows"/>
+    <target name="run" depends="build" description="Run chat binary from the build output.">
+        <exec executable="${build.dir}/chat/chat" failonerror="true" osfamily="unix"/>
+        <exec executable="${build.dir}/chat/${build.type}/chat.exe" failonerror="true" osfamily="windows"/>
     </target>
 
     <target name="clean" description="Delete build output directory.">

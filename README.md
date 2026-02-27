@@ -65,7 +65,7 @@ Useful Ant targets:
 
 * `ant compile_chat` - configure then build only the `stationchat` target
 * `ant test` - configure/build then run `ctest`
-* `ant run` - configure/build then start `stationchat`
+* `ant run` - configure/build then start `chat`
 * `ant clean` - remove the build directory
 
 You can also pick a build type or generator:
@@ -105,14 +105,16 @@ A default runtime folder is created when building the project at **build/chat**.
 ### Windows ###
 
     cd build/chat
-    .\Debug\stationchat.exe
+    .\Debug\chat.exe
 
 ### Linux ###
 
     cd build/chat
-    ./stationchat
+    ./chat
 
-> For the standalone bundle layout, launch `stationchat` with the working directory set to the bundle root (for example `build/chat`) so relative defaults resolve through `etc/stationapi` and `var/log`.
+Compatibility note: the bundle also includes `stationchat` as a compatibility binary name.
+
+> For the standalone bundle layout, launch `chat` with the working directory set to the bundle root (for example `build/chat`) so relative defaults resolve through `etc/stationapi` and `var/log`.
 
 ## Final Notes ##
 
