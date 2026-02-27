@@ -10,11 +10,9 @@ registrar_address = 192.168.88.7
 # Port the registrar server will listen for connections on
 registrar_port = 5000
 
-# Database engine: mariadb (default) or sqlite (legacy mode)
+# Database engine: must be mariadb
 database_engine = mariadb
 
-# Path to the sqlite database file for legacy mode (used when database_engine=sqlite)
-database_path = var/stationapi/stationchat.db
 
 # MariaDB connection fields (required when database_engine=mariadb except password, if applicable)
 database_host = mysql73.unoeuro.com

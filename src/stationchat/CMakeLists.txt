@@ -74,12 +74,6 @@ if (STATIONCHAT_WITH_MARIADB)
     DatabaseMariaDb.hpp)
 endif()
 
-if (STATIONCHAT_WITH_SQLITE)
-  list(APPEND STATIONCHAT_SOURCES
-    DatabaseSqlite.cpp
-    DatabaseSqlite.hpp)
-endif()
-
 add_executable(stationchat ${STATIONCHAT_SOURCES})
 
 target_link_libraries(stationchat
@@ -87,10 +81,6 @@ target_link_libraries(stationchat
     ${Boost_LIBRARIES}
     $<$<PLATFORM_ID:Windows>:ws2_32>)
 
-if (STATIONCHAT_WITH_SQLITE)
-  target_link_libraries(stationchat PRIVATE ${SQLite3_LIBRARY})
-  target_compile_definitions(stationchat PRIVATE STATIONCHAT_WITH_SQLITE=1)
-endif()
 
 if (STATIONCHAT_WITH_MARIADB)
   target_link_libraries(stationchat PRIVATE MariaDB::Client)

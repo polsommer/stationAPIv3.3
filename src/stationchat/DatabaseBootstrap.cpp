@@ -9,10 +9,6 @@ namespace {
 constexpr int kRequiredSchemaVersion = 1;
 
 std::vector<std::pair<int, std::string>> MigrationCatalogForBackend(const std::string& backend) {
-    if (backend == "sqlite") {
-        return {{1, "extras/migrations/sqlite/V001__baseline.sql"}};
-    }
-
     if (backend == "mariadb") {
         return {{1, "extras/migrations/mariadb/V001__baseline.sql"}};
     }
@@ -21,13 +17,6 @@ std::vector<std::pair<int, std::string>> MigrationCatalogForBackend(const std::s
 }
 
 bool TableExists(IDatabaseConnection& db, const std::string& tableName) {
-    if (db.BackendName() == "sqlite") {
-        StatementHandle stmt{db.Prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = @table_name")};
-        int tableNameIdx = stmt->BindParameterIndex("@table_name");
-        stmt->BindText(tableNameIdx, tableName);
-        return stmt->Step() == StatementStepResult::Row;
-    }
-
     StatementHandle stmt{db.Prepare(
         "SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = @table_name")};
     int tableNameIdx = stmt->BindParameterIndex("@table_name");

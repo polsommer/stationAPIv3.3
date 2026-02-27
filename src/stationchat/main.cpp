@@ -72,9 +72,7 @@ StationChatConfig BuildConfiguration(int argc, const char* argv[]) {
         ("bind_to_ip", po::value<bool>(&config.bindToIp)->default_value(false),
             "when set to true, binds to the config address; otherwise, binds on any interface")
         ("database_engine", po::value<std::string>(&config.databaseEngine)->default_value("mariadb"),
-            "database engine (default: mariadb). Set to sqlite for legacy file-backed mode")
-        ("database_path", po::value<std::string>(&config.chatDatabasePath)->default_value("var/stationapi/stationchat.db"),
-            "path to the sqlite3 database file for legacy mode (used when database_engine=sqlite)")
+            "database engine (must be mariadb)")
         ("database_host", po::value<std::string>(&config.databaseHost)->default_value("127.0.0.1"),
             "database host (used when database_engine=mariadb)")
         ("database_port", po::value<uint16_t>(&config.databasePort)->default_value(3306),
