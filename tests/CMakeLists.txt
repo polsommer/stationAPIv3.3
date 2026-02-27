@@ -6,7 +6,8 @@ add_executable(stationapi_tests
     
     stationapi/Serialization_Tests.cpp
     stationapi/StringUtils_Tests.cpp
-    stationapi/DatabaseIdentifier_Tests.cpp)
+    stationapi/DatabaseIdentifier_Tests.cpp
+    stationchat/EraseRemoveIfRegression_Tests.cpp)
 
 target_link_libraries(stationapi_tests
     stationapi)

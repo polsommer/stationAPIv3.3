@@ -79,7 +79,7 @@ void ChatRoom::LeaveRoom(ChatAvatar* avatar) {
         [avatar](auto roomAvatar) { return roomAvatar->GetAvatarId() == avatar->GetAvatarId(); });
 
     if (avatarsIter != std::end(avatars_)) {
-        avatars_.erase(avatarsIter);
+        avatars_.erase(avatarsIter, std::end(avatars_));
     }
 }
 
@@ -251,8 +251,9 @@ void ChatRoom::RemoveAdministrator(uint32_t srcAvatarId, uint32_t avatarId) {
     if (administrators_.empty())
         return;
 
-    administrators_.erase(std::remove_if(std::begin(administrators_), std::end(administrators_),
-        [avatarId](auto administrator) { return administrator->GetAvatarId() == avatarId; }));
+    auto administratorsEnd = std::remove_if(std::begin(administrators_), std::end(administrators_),
+        [avatarId](auto administrator) { return administrator->GetAvatarId() == avatarId; });
+    administrators_.erase(administratorsEnd, std::end(administrators_));
 
     if (IsPersistent()) {
         roomService_->DeleteAdministrator(avatarId, roomId_);
@@ -268,8 +269,9 @@ void ChatRoom::RemoveModerator(uint32_t srcAvatarId, uint32_t avatarId) {
         throw ChatResultException{ChatResultCode::ROOM_DESTAVATARNOTMODERATOR};
     }
 
-    moderators_.erase(std::remove_if(std::begin(moderators_), std::end(moderators_),
-        [avatarId](auto moderator) { return moderator->GetAvatarId() == avatarId; }));
+    auto moderatorsEnd = std::remove_if(std::begin(moderators_), std::end(moderators_),
+        [avatarId](auto moderator) { return moderator->GetAvatarId() == avatarId; });
+    moderators_.erase(moderatorsEnd, std::end(moderators_));
 
     if (IsPersistent()) {
         roomService_->DeleteModerator(avatarId, roomId_);
@@ -285,8 +287,9 @@ void ChatRoom::RemoveBanned(uint32_t srcAvatarId, uint32_t avatarId) {
         throw ChatResultException{ChatResultCode::ROOM_DESTAVATARNOTBANNED};
     }
 
-    banned_.erase(std::remove_if(std::begin(banned_), std::end(banned_),
-        [avatarId](auto banned) { return banned->GetAvatarId() == avatarId; }));
+    auto bannedEnd = std::remove_if(std::begin(banned_), std::end(banned_),
+        [avatarId](auto banned) { return banned->GetAvatarId() == avatarId; });
+    banned_.erase(bannedEnd, std::end(banned_));
 
     if (IsPersistent()) {
         roomService_->DeleteBanned(avatarId, roomId_);
@@ -302,6 +305,7 @@ void ChatRoom::RemoveInvite(uint32_t srcAvatarId, uint32_t avatarId) {
         throw ChatResultException{ChatResultCode::ROOM_DESTAVATARNOTINVITED};
     }
 
-    invited_.erase(std::remove_if(std::begin(invited_), std::end(invited_),
-        [avatarId](auto invited) { return invited->GetAvatarId() == avatarId; }));
+    auto invitedEnd = std::remove_if(std::begin(invited_), std::end(invited_),
+        [avatarId](auto invited) { return invited->GetAvatarId() == avatarId; });
+    invited_.erase(invitedEnd, std::end(invited_));
 }

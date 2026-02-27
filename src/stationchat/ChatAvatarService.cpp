@@ -75,10 +75,11 @@ void ChatAvatarService::LogoutAvatar(ChatAvatar* avatar) {
 	if(!avatar->isOnline_) return;
     avatar->isOnline_ = false;
 
-    onlineAvatars_.erase(std::remove_if(
+    auto newEnd = std::remove_if(
         std::begin(onlineAvatars_), std::end(onlineAvatars_), [avatar](auto onlineAvatar) {
             return onlineAvatar->GetAvatarId() == avatar->GetAvatarId();
-        }));
+        });
+    onlineAvatars_.erase(newEnd, std::end(onlineAvatars_));
 }
 
 void ChatAvatarService::PersistAvatar(const ChatAvatar* avatar) { UpdateAvatar(avatar); }
@@ -206,7 +207,7 @@ void ChatAvatarService::RemoveCachedAvatar(uint32_t avatarId) {
                                   [avatarId](const auto& avatar) { return avatar->avatarId_ == avatarId; });
 
     if (remove_iter != std::end(avatarCache_)) {
-        avatarCache_.erase(remove_iter);
+        avatarCache_.erase(remove_iter, std::end(avatarCache_));
     }
 }
 
