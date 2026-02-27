@@ -31,6 +31,10 @@ Copy the udplibrary directory from the Star Wars Galaxies offical source to the 
     cmake ..
     cmake --build .
 
+To explicitly link Boost statically, configure with:
+
+    cmake -DSTATIONAPI_USE_STATIC_BOOST=ON ..
+
 ### Option 2: Apache Ant (recommended for Linux command workflows) ###
 
 From the project root:

@@ -25,7 +25,8 @@ else()
 endif()
 
 add_definitions(-DBOOST_ALL_NO_LIB)
-set(Boost_USE_STATIC_LIBS ON)
+option(STATIONAPI_USE_STATIC_BOOST "Link Boost libraries statically" OFF)
+set(Boost_USE_STATIC_LIBS ${STATIONAPI_USE_STATIC_BOOST})
 set(Boost_USE_MULTITHREADED ON)
 
 option(STATIONCHAT_WITH_MARIADB "Build stationchat with MariaDB backend" ON)
