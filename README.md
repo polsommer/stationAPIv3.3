@@ -25,6 +25,25 @@ Uses the SOE libraries to implement chat features in a standalone utility. Ideal
 
 Copy the udplibrary directory from the Star Wars Galaxies offical source to the top level swgchat directory, install the remaining dependencies via a package manager, then use either CMake directly or the Ant wrapper.
 
+### Raspberry Pi 4 ###
+
+On Raspberry Pi OS (Debian-based), install the core build dependencies with apt (the `udplibrary` directory is still mandatory and must be copied into the repository root before configuring):
+
+    sudo apt update
+    sudo apt install -y build-essential cmake pkg-config libboost-program-options-dev libmariadb-dev
+
+Both 64-bit and 32-bit Raspberry Pi OS are expected to work:
+
+* 64-bit Pi OS uses `aarch64`/`arm64` user space.
+* 32-bit Pi OS uses `armhf` user space.
+* MariaDB client library lookup supports the corresponding multiarch directories for both `aarch64` and `armhf` layouts.
+
+Minimal CMake flow from the repo root:
+
+    mkdir build && cd build
+    cmake ..
+    cmake --build .
+
 ### Option 1: CMake (manual) ###
 
     mkdir build; cd build
