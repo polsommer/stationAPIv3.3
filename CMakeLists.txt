@@ -17,11 +17,47 @@ include(ModernCpp)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-if (EXISTS "${PROJECT_SOURCE_DIR}/externals/udplibrary/CMakeLists.txt")
-    message(STATUS "Detected udplibrary")
+set(UDPLIBRARY_SOURCE_DIR "${PROJECT_SOURCE_DIR}/externals/udplibrary")
+
+if (EXISTS "${UDPLIBRARY_SOURCE_DIR}/CMakeLists.txt")
+    message(STATUS "Detected udplibrary in externals/udplibrary")
     set(HAVE_UDPLIBRARY 1)
 else()
-    message(FATAL_ERROR "udplibrary required... copy from swg source to the externals directory")
+    find_package(Git QUIET)
+
+    if (GIT_FOUND)
+        set(UDPLIBRARY_FETCH_ROOT "${CMAKE_BINARY_DIR}/_deps")
+        set(UDPLIBRARY_REPOSITORY_DIR "${UDPLIBRARY_FETCH_ROOT}/stationapi-old")
+        set(UDPLIBRARY_SOURCE_DIR "${UDPLIBRARY_REPOSITORY_DIR}/udplibrary")
+
+        file(MAKE_DIRECTORY "${UDPLIBRARY_FETCH_ROOT}")
+
+        if (NOT EXISTS "${UDPLIBRARY_REPOSITORY_DIR}/.git")
+            message(STATUS "udplibrary not found locally. Cloning SWG-Source/stationapi-old...")
+            execute_process(
+                COMMAND "${GIT_EXECUTABLE}" clone --depth 1 https://github.com/SWG-Source/stationapi-old.git "${UDPLIBRARY_REPOSITORY_DIR}"
+                RESULT_VARIABLE UDPLIBRARY_CLONE_RESULT
+                OUTPUT_VARIABLE UDPLIBRARY_CLONE_OUTPUT
+                ERROR_VARIABLE UDPLIBRARY_CLONE_ERROR)
+
+            if (NOT UDPLIBRARY_CLONE_RESULT EQUAL 0)
+                message(FATAL_ERROR "Failed to clone SWG-Source/stationapi-old: ${UDPLIBRARY_CLONE_ERROR}")
+            endif()
+
+            message(STATUS "Downloaded SWG-Source/stationapi-old for udplibrary")
+        else()
+            message(STATUS "Using existing SWG-Source/stationapi-old clone in build dependencies")
+        endif()
+
+        if (EXISTS "${UDPLIBRARY_SOURCE_DIR}/CMakeLists.txt")
+            message(STATUS "Detected udplibrary in downloaded SWG-Source/stationapi-old repository")
+            set(HAVE_UDPLIBRARY 1)
+        endif()
+    endif()
+
+    if (NOT HAVE_UDPLIBRARY)
+        message(FATAL_ERROR "udplibrary required but unavailable. Install git and rerun CMake, or copy swg source udplibrary into externals/udplibrary")
+    endif()
 endif()
 
 add_definitions(-DBOOST_ALL_NO_LIB)

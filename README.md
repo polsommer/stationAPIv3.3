@@ -23,11 +23,11 @@ Uses the SOE libraries to implement chat features in a standalone utility. Ideal
 
 ## Building ##
 
-Copy the udplibrary directory from the Star Wars Galaxies offical source to the top level swgchat directory, install the remaining dependencies via a package manager, then use either CMake directly or the Ant wrapper.
+CMake now attempts to automatically download `udplibrary` from `https://github.com/SWG-Source/stationapi-old` (only the `udplibrary` subdirectory is used during the build). If `git` is unavailable or network access is blocked, copy the `udplibrary` directory from the Star Wars Galaxies source into `externals/udplibrary`. Then install the remaining dependencies via a package manager and use either CMake directly or the Ant wrapper.
 
 ### Raspberry Pi 4 ###
 
-On Raspberry Pi OS (Debian-based), install the core build dependencies with apt (the `udplibrary` directory is still mandatory and must be copied into the repository root before configuring):
+On Raspberry Pi OS (Debian-based), install the core build dependencies with apt (`git` is needed if you want CMake to auto-download `udplibrary`):
 
     sudo apt update
     sudo apt install -y build-essential cmake pkg-config libboost-program-options-dev libmariadb-dev
