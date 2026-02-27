@@ -1,12 +1,12 @@
 #include "ChatRoomService.hpp"
 #include "ChatAvatarService.hpp"
-#include "SQLite3.hpp"
+#include "Database.hpp"
 #include "StreamUtils.hpp"
 #include "StringUtils.hpp"
 
 #include "easylogging++.h"
 
-ChatRoomService::ChatRoomService(ChatAvatarService* avatarService, sqlite3* db)
+ChatRoomService::ChatRoomService(ChatAvatarService* avatarService, IDatabaseConnection* db)
     : avatarService_{avatarService}
     , db_{db} {}
 
@@ -15,55 +15,52 @@ ChatRoomService::~ChatRoomService() {}
 void ChatRoomService::LoadRoomsFromStorage(const std::u16string& baseAddress) {
     rooms_.clear();
 
-    sqlite3_stmt* stmt;
-
+    
     char sql[] = "SELECT id, creator_id, creator_name, creator_address, room_name, room_topic, "
                  "room_password, room_prefix, room_address, room_attributes, room_max_size, "
                  "room_message_id, created_at, node_level FROM room WHERE room_address LIKE @baseAddress||'%'";
 
-    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, 0) != SQLITE_OK) {
-        throw std::runtime_error("Error preparing SQL statement");
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int baseAddressIdx = sqlite3_bind_parameter_index(stmt, "@baseAddress");
+    int baseAddressIdx = stmt->BindParameterIndex("@baseAddress");
 
     auto baseAddressStr = FromWideString(baseAddress);
     LOG(INFO) << "Loading rooms for base address: " << baseAddressStr;
-    sqlite3_bind_text(stmt, baseAddressIdx, baseAddressStr.c_str(), -1, 0);
+    stmt->BindText(baseAddressIdx, baseAddressStr);
 
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
+    while (stmt->Step() == StatementStepResult::Row) {
         auto room = std::make_unique<ChatRoom>();
         std::string tmp;
         room->roomId_ = nextRoomId_++;
-        room->dbId_ = sqlite3_column_int(stmt, 0);
-        room->creatorId_ = sqlite3_column_int(stmt, 1);
+        room->dbId_ = stmt->ColumnInt(0);
+        room->creatorId_ = stmt->ColumnInt(1);
 
-        tmp = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)));
+        tmp = stmt->ColumnText(2);
         room->creatorName_ = std::u16string{std::begin(tmp), std::end(tmp)};
 
-        tmp = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3)));
+        tmp = stmt->ColumnText(3);
         room->creatorAddress_ = std::u16string{std::begin(tmp), std::end(tmp)};
 
-        tmp = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4)));
+        tmp = stmt->ColumnText(4);
         room->roomName_ = std::u16string{std::begin(tmp), std::end(tmp)};
 
-        tmp = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5)));
+        tmp = stmt->ColumnText(5);
         room->roomTopic_ = std::u16string{std::begin(tmp), std::end(tmp)};
 
-        tmp = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6)));
+        tmp = stmt->ColumnText(6);
         room->roomPassword_ = std::u16string{std::begin(tmp), std::end(tmp)};
 
-        tmp = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7)));
+        tmp = stmt->ColumnText(7);
         room->roomPrefix_ = std::u16string{std::begin(tmp), std::end(tmp)};
 
-        tmp = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8)));
+        tmp = stmt->ColumnText(8);
         room->roomAddress_ = std::u16string{std::begin(tmp), std::end(tmp)};
 
-        room->roomAttributes_ = sqlite3_column_int(stmt, 9);
-        room->maxRoomSize_ = sqlite3_column_int(stmt, 10);
-        room->roomMessageId_ = sqlite3_column_int(stmt, 11);
-        room->createTime_ = sqlite3_column_int(stmt, 12);
-        room->nodeLevel_ = sqlite3_column_int(stmt, 13);
+        room->roomAttributes_ = stmt->ColumnInt(9);
+        room->maxRoomSize_ = stmt->ColumnInt(10);
+        room->roomMessageId_ = stmt->ColumnInt(11);
+        room->createTime_ = stmt->ColumnInt(12);
+        room->nodeLevel_ = stmt->ColumnInt(13);
 
         if (!RoomExists(room->GetRoomAddress())) {
             rooms_.emplace_back(std::move(room));
@@ -108,8 +105,7 @@ void ChatRoomService::DestroyRoom(ChatRoom* room) {
 
 ChatResultCode ChatRoomService::PersistNewRoom(ChatRoom& room) {
     ChatResultCode result = ChatResultCode::SUCCESS;
-    sqlite3_stmt* stmt;
-
+    
     char sql[] = "INSERT INTO room (creator_id, creator_name, creator_address, room_name, "
                  "room_topic, room_password, room_prefix, room_address, room_attributes, "
                  "room_max_size, room_message_id, created_at, node_level) VALUES (@creator_id, "
@@ -117,57 +113,58 @@ ChatResultCode ChatRoomService::PersistNewRoom(ChatRoom& room) {
                  "@room_prefix, @room_address, @room_attributes, @room_max_size, @room_message_id, "
                  "@created_at, @node_level)";
 
-    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, 0) != SQLITE_OK) {
-        result = ChatResultCode::DBFAIL;
-    } else {
-        int creatorIdIdx = sqlite3_bind_parameter_index(stmt, "@creator_id");
-        int creatorNameIdx = sqlite3_bind_parameter_index(stmt, "@creator_name");
-        int creatorAddressIdx = sqlite3_bind_parameter_index(stmt, "@creator_address");
-        int roomNameIdx = sqlite3_bind_parameter_index(stmt, "@room_name");
-        int roomTopicIdx = sqlite3_bind_parameter_index(stmt, "@room_topic");
-        int roomPasswordIdx = sqlite3_bind_parameter_index(stmt, "@room_password");
-        int roomPrefixIdx = sqlite3_bind_parameter_index(stmt, "@room_prefix");
-        int roomAddressIdx = sqlite3_bind_parameter_index(stmt, "@room_address");
-        int roomAttributesIdx = sqlite3_bind_parameter_index(stmt, "@room_attributes");
-        int roomMaxSizeIdx = sqlite3_bind_parameter_index(stmt, "@room_max_size");
-        int roomMessageIdIdx = sqlite3_bind_parameter_index(stmt, "@room_message_id");
-        int createdAtIdx = sqlite3_bind_parameter_index(stmt, "@created_at");
-        int nodeLevelIdx = sqlite3_bind_parameter_index(stmt, "@node_level");
+    try {
+        auto stmt = db_->Prepare(sql);
+        int creatorIdIdx = stmt->BindParameterIndex("@creator_id");
+        int creatorNameIdx = stmt->BindParameterIndex("@creator_name");
+        int creatorAddressIdx = stmt->BindParameterIndex("@creator_address");
+        int roomNameIdx = stmt->BindParameterIndex("@room_name");
+        int roomTopicIdx = stmt->BindParameterIndex("@room_topic");
+        int roomPasswordIdx = stmt->BindParameterIndex("@room_password");
+        int roomPrefixIdx = stmt->BindParameterIndex("@room_prefix");
+        int roomAddressIdx = stmt->BindParameterIndex("@room_address");
+        int roomAttributesIdx = stmt->BindParameterIndex("@room_attributes");
+        int roomMaxSizeIdx = stmt->BindParameterIndex("@room_max_size");
+        int roomMessageIdIdx = stmt->BindParameterIndex("@room_message_id");
+        int createdAtIdx = stmt->BindParameterIndex("@created_at");
+        int nodeLevelIdx = stmt->BindParameterIndex("@node_level");
 
-        sqlite3_bind_int(stmt, creatorIdIdx, room.creatorId_);
+        stmt->BindInt(creatorIdIdx, room.creatorId_);
 
         auto creatorName = FromWideString(room.creatorName_);
-        sqlite3_bind_text(stmt, creatorNameIdx, creatorName.c_str(), -1, 0);
+        stmt->BindText(creatorNameIdx, creatorName);
 
         auto creatorAddress = FromWideString(room.creatorAddress_);
-        sqlite3_bind_text(stmt, creatorAddressIdx, creatorAddress.c_str(), -1, 0);
+        stmt->BindText(creatorAddressIdx, creatorAddress);
 
         auto roomName = FromWideString(room.roomName_);
-        sqlite3_bind_text(stmt, roomNameIdx, roomName.c_str(), -1, 0);
+        stmt->BindText(roomNameIdx, roomName);
 
         auto roomTopic = FromWideString(room.roomTopic_);
-        sqlite3_bind_text(stmt, roomTopicIdx, roomTopic.c_str(), -1, 0);
+        stmt->BindText(roomTopicIdx, roomTopic);
 
         auto roomPassword = FromWideString(room.roomPassword_);
-        sqlite3_bind_text(stmt, roomPasswordIdx, roomPassword.c_str(), -1, 0);
+        stmt->BindText(roomPasswordIdx, roomPassword);
 
         auto roomPrefix = FromWideString(room.roomPrefix_);
-        sqlite3_bind_text(stmt, roomPrefixIdx, roomPrefix.c_str(), -1, 0);
+        stmt->BindText(roomPrefixIdx, roomPrefix);
 
         auto roomAddress = FromWideString(room.roomAddress_);
-        sqlite3_bind_text(stmt, roomAddressIdx, roomAddress.c_str(), -1, 0);
+        stmt->BindText(roomAddressIdx, roomAddress);
 
-        sqlite3_bind_int(stmt, roomAttributesIdx, room.roomAttributes_);
-        sqlite3_bind_int(stmt, roomMaxSizeIdx, room.maxRoomSize_);
-        sqlite3_bind_int(stmt, roomMessageIdIdx, room.roomMessageId_);
-        sqlite3_bind_int(stmt, createdAtIdx, room.createTime_);
-        sqlite3_bind_int(stmt, nodeLevelIdx, room.nodeLevel_);
+        stmt->BindInt(roomAttributesIdx, room.roomAttributes_);
+        stmt->BindInt(roomMaxSizeIdx, room.maxRoomSize_);
+        stmt->BindInt(roomMessageIdIdx, room.roomMessageId_);
+        stmt->BindInt(createdAtIdx, room.createTime_);
+        stmt->BindInt(nodeLevelIdx, room.nodeLevel_);
 
-        if (sqlite3_step(stmt) != SQLITE_DONE) {
+        if (stmt->Step() != StatementStepResult::Done) {
             result = ChatResultCode::DBFAIL;
         } else {
-            room.dbId_ = static_cast<uint32_t>(sqlite3_last_insert_rowid(db_));
+            room.dbId_ = static_cast<uint32_t>(db_->GetLastInsertId());
         }
+    } catch (const DatabaseException&) {
+        result = ChatResultCode::DBFAIL;
     }
 
     return result;
@@ -221,199 +218,152 @@ std::vector<ChatRoom*> ChatRoomService::GetJoinedRooms(const ChatAvatar * avatar
 }
 
 void ChatRoomService::DeleteRoom(ChatRoom* room) {
-    sqlite3_stmt* stmt;
-    char sql[] = "DELETE FROM room WHERE id = @id";
+        char sql[] = "DELETE FROM room WHERE id = @id";
 
-    auto result = sqlite3_prepare_v2(db_, sql, -1, &stmt, 0);
-    if (result != SQLITE_OK) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int idIdx = sqlite3_bind_parameter_index(stmt, "@id");
-    sqlite3_bind_int(stmt, idIdx, room->dbId_);
+    int idIdx = stmt->BindParameterIndex("@id");
+    stmt->BindInt(idIdx, room->dbId_);
 
-    result = sqlite3_step(stmt);
-    if (result != SQLITE_DONE) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
+    if (stmt->Step() != StatementStepResult::Done) {
+        throw DatabaseException{"expected statement done"};
     }
 }
 
 void ChatRoomService::LoadModerators(ChatRoom * room) {
-    sqlite3_stmt* stmt;
-    char sql[] = "SELECT moderator_avatar_id FROM room_moderator WHERE room_id = @room_id";
+        char sql[] = "SELECT moderator_avatar_id FROM room_moderator WHERE room_id = @room_id";
 
-    auto result = sqlite3_prepare_v2(db_, sql, -1, &stmt, 0);
-    if (result != SQLITE_OK) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int roomIdIdx = sqlite3_bind_parameter_index(stmt, "@room_id");
-    sqlite3_bind_int(stmt, roomIdIdx, room->GetRoomId());
+    int roomIdIdx = stmt->BindParameterIndex("@room_id");
+    stmt->BindInt(roomIdIdx, room->GetRoomId());
 
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        uint32_t moderatorId = sqlite3_column_int(stmt, 0);
+    while (stmt->Step() == StatementStepResult::Row) {
+        uint32_t moderatorId = stmt->ColumnInt(0);
         room->moderators_.push_back(avatarService_->GetAvatar(moderatorId));
     }
 }
 
 void ChatRoomService::PersistModerator(uint32_t moderatorId, uint32_t roomId) {
-    sqlite3_stmt* stmt;
-    char sql[] = "INSERT OR IGNORE INTO room_moderator (moderator_avatar_id, room_id) VALUES (@moderator_avatar_id, @room_id)";
+        char sql[] = "INSERT OR IGNORE INTO room_moderator (moderator_avatar_id, room_id) VALUES (@moderator_avatar_id, @room_id)";
 
-    auto result = sqlite3_prepare_v2(db_, sql, -1, &stmt, 0);
-    if (result != SQLITE_OK) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int moderatorAvatarIdIdx = sqlite3_bind_parameter_index(stmt, "@moderator_avatar_id");
-    int roomIdIdx = sqlite3_bind_parameter_index(stmt, "@room_id");
+    int moderatorAvatarIdIdx = stmt->BindParameterIndex("@moderator_avatar_id");
+    int roomIdIdx = stmt->BindParameterIndex("@room_id");
 
-    sqlite3_bind_int(stmt, moderatorAvatarIdIdx, moderatorId);
-    sqlite3_bind_int(stmt, roomIdIdx, roomId);
+    stmt->BindInt(moderatorAvatarIdIdx, moderatorId);
+    stmt->BindInt(roomIdIdx, roomId);
 
-    result = sqlite3_step(stmt);
-    if (result != SQLITE_DONE) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
+    if (stmt->Step() != StatementStepResult::Done) {
+        throw DatabaseException{"expected statement done"};
     }
 }
 
 void ChatRoomService::DeleteModerator(uint32_t moderatorId, uint32_t roomId) {
-    sqlite3_stmt* stmt;
-    char sql[] = "DELETE FROM room_moderator WHERE moderator_avatar_id = @moderator_avatar_id AND room_id = @room_id";
+        char sql[] = "DELETE FROM room_moderator WHERE moderator_avatar_id = @moderator_avatar_id AND room_id = @room_id";
 
-    auto result = sqlite3_prepare_v2(db_, sql, -1, &stmt, 0);
-    if (result != SQLITE_OK) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int moderatorAvatarIdIdx = sqlite3_bind_parameter_index(stmt, "@moderator_avatar_id");
-    int roomIdIdx = sqlite3_bind_parameter_index(stmt, "@room_id");
+    int moderatorAvatarIdIdx = stmt->BindParameterIndex("@moderator_avatar_id");
+    int roomIdIdx = stmt->BindParameterIndex("@room_id");
 
-    sqlite3_bind_int(stmt, moderatorAvatarIdIdx, moderatorId);
-    sqlite3_bind_int(stmt, roomIdIdx, roomId);
+    stmt->BindInt(moderatorAvatarIdIdx, moderatorId);
+    stmt->BindInt(roomIdIdx, roomId);
 
-    result = sqlite3_step(stmt);
-    if (result != SQLITE_DONE) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
+    if (stmt->Step() != StatementStepResult::Done) {
+        throw DatabaseException{"expected statement done"};
     }
 }
 
 void ChatRoomService::LoadAdministrators(ChatRoom * room) {
-    sqlite3_stmt* stmt;
-    char sql[] = "SELECT administrator_avatar_id FROM room_administrator WHERE room_id = @room_id";
+        char sql[] = "SELECT administrator_avatar_id FROM room_administrator WHERE room_id = @room_id";
 
-    auto result = sqlite3_prepare_v2(db_, sql, -1, &stmt, 0);
-    if (result != SQLITE_OK) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int roomIdIdx = sqlite3_bind_parameter_index(stmt, "@room_id");
-    sqlite3_bind_int(stmt, roomIdIdx, room->GetRoomId());
+    int roomIdIdx = stmt->BindParameterIndex("@room_id");
+    stmt->BindInt(roomIdIdx, room->GetRoomId());
 
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        uint32_t administratorId = sqlite3_column_int(stmt, 0);
+    while (stmt->Step() == StatementStepResult::Row) {
+        uint32_t administratorId = stmt->ColumnInt(0);
         room->administrators_.push_back(avatarService_->GetAvatar(administratorId));
     }
 }
 
 void ChatRoomService::PersistAdministrator(uint32_t administratorId, uint32_t roomId) {
-    sqlite3_stmt* stmt;
-    char sql[] = "INSERT OR IGNORE INTO room_administrator (administrator_avatar_id, room_id) VALUES (@administrator_avatar_id, @room_id)";
+        char sql[] = "INSERT OR IGNORE INTO room_administrator (administrator_avatar_id, room_id) VALUES (@administrator_avatar_id, @room_id)";
 
-    auto result = sqlite3_prepare_v2(db_, sql, -1, &stmt, 0);
-    if (result != SQLITE_OK) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int administratorAvatarIdIdx = sqlite3_bind_parameter_index(stmt, "@administrator_avatar_id");
-    int roomIdIdx = sqlite3_bind_parameter_index(stmt, "@room_id");
+    int administratorAvatarIdIdx = stmt->BindParameterIndex("@administrator_avatar_id");
+    int roomIdIdx = stmt->BindParameterIndex("@room_id");
 
-    sqlite3_bind_int(stmt, administratorAvatarIdIdx, administratorId);
-    sqlite3_bind_int(stmt, roomIdIdx, roomId);
+    stmt->BindInt(administratorAvatarIdIdx, administratorId);
+    stmt->BindInt(roomIdIdx, roomId);
 
-    result = sqlite3_step(stmt);
-    if (result != SQLITE_DONE) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
+    if (stmt->Step() != StatementStepResult::Done) {
+        throw DatabaseException{"expected statement done"};
     }
 }
 
 void ChatRoomService::DeleteAdministrator(uint32_t administratorId, uint32_t roomId) {
-    sqlite3_stmt* stmt;
-    char sql[] = "DELETE FROM room_administrator WHERE administrator_avatar_id = @administrator_avatar_id AND room_id = @room_id";
+        char sql[] = "DELETE FROM room_administrator WHERE administrator_avatar_id = @administrator_avatar_id AND room_id = @room_id";
 
-    auto result = sqlite3_prepare_v2(db_, sql, -1, &stmt, 0);
-    if (result != SQLITE_OK) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int administratorAvatarIdIdx = sqlite3_bind_parameter_index(stmt, "@administrator_avatar_id");
-    int roomIdIdx = sqlite3_bind_parameter_index(stmt, "@room_id");
+    int administratorAvatarIdIdx = stmt->BindParameterIndex("@administrator_avatar_id");
+    int roomIdIdx = stmt->BindParameterIndex("@room_id");
 
-    sqlite3_bind_int(stmt, administratorAvatarIdIdx, administratorId);
-    sqlite3_bind_int(stmt, roomIdIdx, roomId);
+    stmt->BindInt(administratorAvatarIdIdx, administratorId);
+    stmt->BindInt(roomIdIdx, roomId);
 
-    result = sqlite3_step(stmt);
-    if (result != SQLITE_DONE) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
+    if (stmt->Step() != StatementStepResult::Done) {
+        throw DatabaseException{"expected statement done"};
     }
 }
 
 void ChatRoomService::LoadBanned(ChatRoom * room) {
-    sqlite3_stmt* stmt;
-    char sql[] = "SELECT banned_avatar_id FROM room_ban WHERE room_id = @room_id";
+        char sql[] = "SELECT banned_avatar_id FROM room_ban WHERE room_id = @room_id";
 
-    auto result = sqlite3_prepare_v2(db_, sql, -1, &stmt, 0);
-    if (result != SQLITE_OK) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int roomIdIdx = sqlite3_bind_parameter_index(stmt, "@room_id");
-    sqlite3_bind_int(stmt, roomIdIdx, room->GetRoomId());
+    int roomIdIdx = stmt->BindParameterIndex("@room_id");
+    stmt->BindInt(roomIdIdx, room->GetRoomId());
 
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        uint32_t bannedId = sqlite3_column_int(stmt, 0);
+    while (stmt->Step() == StatementStepResult::Row) {
+        uint32_t bannedId = stmt->ColumnInt(0);
         room->banned_.push_back(avatarService_->GetAvatar(bannedId));
     }
 }
 
 void ChatRoomService::PersistBanned(uint32_t bannedId, uint32_t roomId) {
-    sqlite3_stmt* stmt;
-    char sql[] = "INSERT OR IGNORE INTO room_ban (banned_avatar_id, room_id) VALUES (@banned_avatar_id, @room_id)";
+        char sql[] = "INSERT OR IGNORE INTO room_ban (banned_avatar_id, room_id) VALUES (@banned_avatar_id, @room_id)";
 
-    auto result = sqlite3_prepare_v2(db_, sql, -1, &stmt, 0);
-    if (result != SQLITE_OK) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int bannedAvatarIdIdx = sqlite3_bind_parameter_index(stmt, "@moderator_avatar_id");
-    int roomIdIdx = sqlite3_bind_parameter_index(stmt, "@room_id");
+    int bannedAvatarIdIdx = stmt->BindParameterIndex("@moderator_avatar_id");
+    int roomIdIdx = stmt->BindParameterIndex("@room_id");
 
-    sqlite3_bind_int(stmt, bannedAvatarIdIdx, bannedId);
-    sqlite3_bind_int(stmt, roomIdIdx, roomId);
+    stmt->BindInt(bannedAvatarIdIdx, bannedId);
+    stmt->BindInt(roomIdIdx, roomId);
 
-    result = sqlite3_step(stmt);
-    if (result != SQLITE_DONE) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
+    if (stmt->Step() != StatementStepResult::Done) {
+        throw DatabaseException{"expected statement done"};
     }
 }
 
 void ChatRoomService::DeleteBanned(uint32_t bannedId, uint32_t roomId) {
-    sqlite3_stmt* stmt;
-    char sql[] = "DELETE FROM room_ban WHERE banned_avatar_id = @banned_avatar_id AND room_id = @room_id";
+        char sql[] = "DELETE FROM room_ban WHERE banned_avatar_id = @banned_avatar_id AND room_id = @room_id";
 
-    auto result = sqlite3_prepare_v2(db_, sql, -1, &stmt, 0);
-    if (result != SQLITE_OK) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
-    }
+    auto stmt = db_->Prepare(sql);
 
-    int bannedAvatarIdIdx = sqlite3_bind_parameter_index(stmt, "@banned_avatar_id");
-    int roomIdIdx = sqlite3_bind_parameter_index(stmt, "@room_id");
+    int bannedAvatarIdIdx = stmt->BindParameterIndex("@banned_avatar_id");
+    int roomIdIdx = stmt->BindParameterIndex("@room_id");
 
-    sqlite3_bind_int(stmt, bannedAvatarIdIdx, bannedId);
-    sqlite3_bind_int(stmt, roomIdIdx, roomId);
+    stmt->BindInt(bannedAvatarIdIdx, bannedId);
+    stmt->BindInt(roomIdIdx, roomId);
 
-    result = sqlite3_step(stmt);
-    if (result != SQLITE_DONE) {
-        throw SQLite3Exception{result, sqlite3_errmsg(db_)};
+    if (stmt->Step() != StatementStepResult::Done) {
+        throw DatabaseException{"expected statement done"};
     }
 }

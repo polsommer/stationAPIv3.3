@@ -9,11 +9,11 @@
 #include <cstdint>
 #include <vector>
 
-struct sqlite3;
+class IDatabaseConnection;
 
 class PersistentMessageService {
 public:
-    explicit PersistentMessageService(sqlite3* db);
+    explicit PersistentMessageService(IDatabaseConnection* db);
     ~PersistentMessageService();
 
     void StoreMessage(PersistentMessage& message);
@@ -29,5 +29,5 @@ public:
         uint32_t avatarId, const std::u16string& category, PersistentState newStatus);
 
 private:
-    sqlite3* db_;
+    IDatabaseConnection* db_;
 };

@@ -1,26 +1,21 @@
-
 #include "GatewayNode.hpp"
 
 #include "ChatAvatarService.hpp"
 #include "ChatRoomService.hpp"
+#include "DatabaseFactory.hpp"
 #include "PersistentMessageService.hpp"
 #include "StationChatConfig.hpp"
 
-#include <sqlite3.h>
-
 GatewayNode::GatewayNode(StationChatConfig& config)
     : Node(this, config.gatewayAddress, config.gatewayPort, config.bindToIp)
-    , config_{config} {
-    if (sqlite3_open(config.chatDatabasePath.c_str(), &db_) != SQLITE_OK) {
-        throw std::runtime_error("Can't open database: " + std::string{sqlite3_errmsg(db_)});
-    }
-
-    avatarService_ = std::make_unique<ChatAvatarService>(db_);
-    roomService_ = std::make_unique<ChatRoomService>(avatarService_.get(), db_);
-    messageService_ = std::make_unique<PersistentMessageService>(db_);
+    , config_{config}
+    , db_{CreateDatabaseConnection(config)} {
+    avatarService_ = std::make_unique<ChatAvatarService>(db_.get());
+    roomService_ = std::make_unique<ChatRoomService>(avatarService_.get(), db_.get());
+    messageService_ = std::make_unique<PersistentMessageService>(db_.get());
 }
 
-GatewayNode::~GatewayNode() { sqlite3_close(db_); }
+GatewayNode::~GatewayNode() = default;
 
 ChatAvatarService* GatewayNode::GetAvatarService() { return avatarService_.get(); }
 

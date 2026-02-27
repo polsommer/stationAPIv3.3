@@ -19,6 +19,7 @@ Uses the SOE libraries to implement chat features in a standalone utility. Ideal
 * c++14 compatible compiler
 * boost::program_options
 * sqlite3
+* MariaDB Connector/C (optional, required for MariaDB runtime provider)
 * udplibrary - bundled in the Star Wars Galaxies official source
 
 ## Building ##
@@ -39,6 +40,8 @@ To create a new, clean database instance, use the following commands:
     sqlite> .read /path/to/extras/init_database.sql
 
 Then update the **database_path** config option with the full path to the database.
+
+For MariaDB deployments, set **database_engine = mariadb** and fill in **database_host**, **database_port**, **database_user**, **database_password**, and **database_schema** in `swgchat.cfg`.
 
 ## Running ##
 

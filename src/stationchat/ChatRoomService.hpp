@@ -11,13 +11,13 @@
 #include <set>
 #include <vector>
 
-struct sqlite3;
+class IDatabaseConnection;
 
 class ChatAvatarService;
 
 class ChatRoomService {
 public:
-    ChatRoomService(ChatAvatarService* avatarService, sqlite3* db);
+    ChatRoomService(ChatAvatarService* avatarService, IDatabaseConnection* db);
     ~ChatRoomService();
 
     void LoadRoomsFromStorage(const std::u16string& baseAddress);
@@ -55,5 +55,5 @@ private:
     uint32_t nextRoomId_ = 0;
     std::vector<std::unique_ptr<ChatRoom>> rooms_;
     ChatAvatarService* avatarService_;
-    sqlite3* db_;
+    IDatabaseConnection* db_;
 };

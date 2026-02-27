@@ -41,6 +41,13 @@ add_executable(
   ChatAvatarService.hpp
   ChatEnums.cpp
   ChatEnums.hpp
+  Database.hpp
+  DatabaseFactory.cpp
+  DatabaseFactory.hpp
+  DatabaseMariaDb.cpp
+  DatabaseMariaDb.hpp
+  DatabaseSqlite.cpp
+  DatabaseSqlite.hpp
   ChatRoom.cpp
   ChatRoom.hpp
   ChatRoomService.cpp
