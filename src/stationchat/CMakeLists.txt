@@ -66,7 +66,11 @@ set(STATIONCHAT_SOURCES
   RegistrarNode.hpp
   StationChatApp.cpp
   StationChatApp.hpp
-  StationChatConfig.hpp)
+  StationChatConfig.hpp
+  policy/PolicyDecision.hpp
+  policy/PolicyEngine.cpp
+  policy/PolicyEngine.hpp
+  policy/PolicyEvent.hpp)
 
 if (STATIONCHAT_WITH_MARIADB)
   list(APPEND STATIONCHAT_SOURCES

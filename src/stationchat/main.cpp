@@ -107,6 +107,16 @@ StationChatConfig BuildConfiguration(int argc, const char* argv[]) {
             "path to database TLS client certificate (optional)")
         ("database_ssl_key", po::value<std::string>(&config.databaseSslKey)->default_value(""),
             "path to database TLS client key (optional)")
+        ("policy_enabled", po::value<bool>(&config.policyEnabled)->default_value(false),
+            "enables policy evaluation hooks")
+        ("policy_shadow_mode", po::value<bool>(&config.policyShadowMode)->default_value(true),
+            "when true, policy decisions are logged only and never enforced")
+        ("policy_soft_warn_threshold", po::value<int>(&config.policySoftWarnThreshold)->default_value(35),
+            "risk score threshold for soft warnings")
+        ("policy_throttle_threshold", po::value<int>(&config.policyThrottleThreshold)->default_value(60),
+            "risk score threshold for throttling")
+        ("policy_block_threshold", po::value<int>(&config.policyBlockThreshold)->default_value(85),
+            "risk score threshold for blocking")
         ;
 
     po::options_description cmdline_options;

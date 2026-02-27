@@ -31,3 +31,10 @@ database_ssl_key =
 
 # When set to true, binds to the config address; otherwise, binds on any interface
 bind_to_ip = false
+
+# Policy framework settings
+policy_enabled = false
+policy_shadow_mode = true
+policy_soft_warn_threshold = 35
+policy_throttle_threshold = 60
+policy_block_threshold = 85
