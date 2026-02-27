@@ -4,9 +4,6 @@
 #if defined(STATIONCHAT_WITH_MARIADB)
 #include "DatabaseMariaDb.hpp"
 #endif
-#if defined(STATIONCHAT_WITH_SQLITE)
-#include "DatabaseSqlite.hpp"
-#endif
 #include "StationChatConfig.hpp"
 
 #include "easylogging++.h"
@@ -81,44 +78,36 @@ void LogSchemaStatus(const IDatabaseConnection& db, const SchemaValidationResult
 std::unique_ptr<IDatabaseConnection> CreateDatabaseConnection(const StationChatConfig& config) {
     std::unique_ptr<IDatabaseConnection> connection;
 
-    if (config.databaseEngine == "mariadb") {
-#if defined(STATIONCHAT_WITH_MARIADB)
-        std::vector<std::string> missing;
-        if (config.databaseUser.empty()) {
-            missing.emplace_back("database_user");
-        }
-        if (config.databaseSchema.empty()) {
-            missing.emplace_back("database_schema");
-        }
-
-        if (!missing.empty()) {
-            throw DatabaseException("database", 0,
-                "database_engine=mariadb requires " + Join(missing)
-                + "; set these in swgchat.cfg (or pass --database_user/--database_schema). "
-                + "To use legacy SQLite mode, set database_engine=sqlite and configure database_path");
-        }
-
-        connection = std::make_unique<MariaDbDatabaseConnection>(
-            config.databaseHost,
-            config.databasePort,
-            config.databaseUser,
-            config.databasePassword,
-            config.databaseSchema);
-#else
+    if (config.databaseEngine != "mariadb") {
         throw DatabaseException("database", 0,
-            "unsupported database_engine 'mariadb'; this binary was built without MariaDB support");
-#endif
-    } else if (config.databaseEngine == "sqlite") {
-#if defined(STATIONCHAT_WITH_SQLITE)
-        connection = std::make_unique<SqliteDatabaseConnection>(config.chatDatabasePath);
-#else
-        throw DatabaseException("database", 0,
-            "unsupported database_engine 'sqlite'; this binary was built without SQLite support");
-#endif
-    } else {
-        throw DatabaseException("database", 0,
-            "unsupported database_engine '" + config.databaseEngine + "'; expected sqlite or mariadb");
+            "unsupported database_engine '" + config.databaseEngine + "'; expected mariadb");
     }
+
+#if defined(STATIONCHAT_WITH_MARIADB)
+    std::vector<std::string> missing;
+    if (config.databaseUser.empty()) {
+        missing.emplace_back("database_user");
+    }
+    if (config.databaseSchema.empty()) {
+        missing.emplace_back("database_schema");
+    }
+
+    if (!missing.empty()) {
+        throw DatabaseException("database", 0,
+            "database_engine=mariadb requires " + Join(missing)
+            + "; set these in swgchat.cfg (or pass --database_user/--database_schema)");
+    }
+
+    connection = std::make_unique<MariaDbDatabaseConnection>(
+        config.databaseHost,
+        config.databasePort,
+        config.databaseUser,
+        config.databasePassword,
+        config.databaseSchema);
+#else
+    throw DatabaseException("database", 0,
+        "unsupported database_engine 'mariadb'; this binary was built without MariaDB support");
+#endif
 
     const auto validation = ValidateDatabaseSchemaOrThrow(*connection);
     LogSchemaStatus(*connection, validation);

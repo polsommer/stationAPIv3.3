@@ -28,18 +28,13 @@ add_definitions(-DBOOST_ALL_NO_LIB)
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
 
-option(STATIONCHAT_WITH_SQLITE "Build stationchat with SQLite backend" ON)
 option(STATIONCHAT_WITH_MARIADB "Build stationchat with MariaDB backend" ON)
 
-if (NOT STATIONCHAT_WITH_SQLITE AND NOT STATIONCHAT_WITH_MARIADB)
-    message(FATAL_ERROR "stationchat requires at least one database backend enabled")
+if (NOT STATIONCHAT_WITH_MARIADB)
+    message(FATAL_ERROR "stationchat requires MariaDB backend enabled")
 endif()
 
 find_package(Boost COMPONENTS program_options REQUIRED)
-
-if (STATIONCHAT_WITH_SQLITE)
-    find_package(SQLite3 REQUIRED)
-endif()
 
 if (STATIONCHAT_WITH_MARIADB)
     find_package(MariaDBClient REQUIRED)

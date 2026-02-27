@@ -2,8 +2,8 @@
 #pragma once
 
 #include "ChatEnums.hpp"
+#include "Database.hpp"
 #include "NodeClient.hpp"
-#include "SQLite3.hpp"
 #include "easylogging++.h"
 
 class ChatAvatar;
@@ -54,9 +54,9 @@ private:
         } catch (const ChatResultException& e) {
             response.result = e.code;
             LOG(ERROR) << "ChatAPI Result Exception: [" << ToString(e.code) << "] " << e.message;
-        } catch (const SQLite3Exception& e) {
+        } catch (const DatabaseException& e) {
             response.result = ChatResultCode::DATABASE;
-            LOG(ERROR) << "Database Error: [" << e.code << "] " << e.message;
+            LOG(ERROR) << "Database Error: [" << e.code << "] " << e.what();
         }
 
         Send(response);

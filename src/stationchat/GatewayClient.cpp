@@ -7,7 +7,6 @@
 #include "GatewayNode.hpp"
 #include "Message.hpp"
 #include "PersistentMessageService.hpp"
-#include "SQLite3.hpp"
 #include "StationChatConfig.hpp"
 #include "UdpLibrary.hpp"
 
