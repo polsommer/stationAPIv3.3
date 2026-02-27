@@ -10,13 +10,13 @@ registrar_address = 127.0.0.1
 # Port the registrar server will listen for connections on
 registrar_port = 5000
 
-# Database engine: sqlite or mariadb
-database_engine = sqlite
+# Database engine: mariadb (default) or sqlite (legacy mode)
+database_engine = mariadb
 
-# Path to the sqlite database file (used when database_engine=sqlite)
+# Path to the sqlite database file for legacy mode (used when database_engine=sqlite)
 database_path = var/stationapi/stationchat.db
 
-# MariaDB connection fields (used when database_engine=mariadb)
+# MariaDB connection fields (required when database_engine=mariadb except password, if applicable)
 database_host = 127.0.0.1
 database_port = 3306
 database_user =

@@ -71,20 +71,20 @@ StationChatConfig BuildConfiguration(int argc, const char* argv[]) {
             "port for registrar connections")
         ("bind_to_ip", po::value<bool>(&config.bindToIp)->default_value(false),
             "when set to true, binds to the config address; otherwise, binds on any interface")
-        ("database_engine", po::value<std::string>(&config.databaseEngine)->default_value("sqlite"),
-            "database engine: sqlite or mariadb")
+        ("database_engine", po::value<std::string>(&config.databaseEngine)->default_value("mariadb"),
+            "database engine (default: mariadb). Set to sqlite for legacy file-backed mode")
         ("database_path", po::value<std::string>(&config.chatDatabasePath)->default_value("var/stationapi/stationchat.db"),
-            "path to the sqlite3 database file (used when database_engine=sqlite)")
+            "path to the sqlite3 database file for legacy mode (used when database_engine=sqlite)")
         ("database_host", po::value<std::string>(&config.databaseHost)->default_value("127.0.0.1"),
             "database host (used when database_engine=mariadb)")
         ("database_port", po::value<uint16_t>(&config.databasePort)->default_value(3306),
             "database port (used when database_engine=mariadb)")
         ("database_user", po::value<std::string>(&config.databaseUser)->default_value(""),
-            "database user (used when database_engine=mariadb)")
+            "database user (required when database_engine=mariadb)")
         ("database_password", po::value<std::string>(&config.databasePassword)->default_value(""),
             "database password (used when database_engine=mariadb)")
         ("database_schema", po::value<std::string>(&config.databaseSchema)->default_value(""),
-            "database schema (used when database_engine=mariadb)")
+            "database schema (required when database_engine=mariadb)")
         ;
 
     po::options_description cmdline_options;

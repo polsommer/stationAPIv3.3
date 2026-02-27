@@ -12,7 +12,8 @@ struct StationChatConfig {
     std::string registrarAddress;
     uint16_t registrarPort;
 
-    std::string databaseEngine = "sqlite";
+    // MariaDB is the default backend. Set databaseEngine="sqlite" to use legacy file-backed mode.
+    std::string databaseEngine = "mariadb";
     std::string chatDatabasePath;
     std::string databaseHost = "127.0.0.1";
     uint16_t databasePort = 3306;
