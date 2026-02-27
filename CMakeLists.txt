@@ -55,11 +55,6 @@ install(FILES
     RENAME swgchat.cfg)
 
 install(FILES
-    extras/stationchat.db.dist
-    DESTINATION var/stationapi
-    RENAME stationchat.db)
-
-install(FILES
-    extras/init_database.sql
     extras/init_database_mariadb.sql
+    extras/migrations/mariadb/V001__baseline.sql
     DESTINATION share/stationapi)
