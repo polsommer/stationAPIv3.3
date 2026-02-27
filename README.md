@@ -112,6 +112,8 @@ A default runtime folder is created when building the project at **build/chat**.
     cd build/chat
     ./stationchat
 
+> For the standalone bundle layout, launch `stationchat` with the working directory set to the bundle root (for example `build/chat`) so relative defaults resolve through `etc/stationapi` and `var/log`.
+
 ## Final Notes ##
 
 It is recommended to copy the **build/chat** directory to another location after building to ensure the configuration files are not overwritten by future changes to the default versions of these files.

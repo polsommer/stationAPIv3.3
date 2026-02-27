@@ -97,6 +97,8 @@ endif()
 add_custom_command(TARGET stationchat POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory "${STATIONCHAT_CHAT_OUTPUT_DIR}"
   COMMAND ${CMAKE_COMMAND} -E make_directory "${STATIONCHAT_CHAT_OUTPUT_DIR}/etc/stationapi"
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${STATIONCHAT_CHAT_OUTPUT_DIR}/var/log"
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${STATIONCHAT_CHAT_OUTPUT_DIR}/var/stationapi"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "$<TARGET_FILE:stationchat>"
           "${STATIONCHAT_CHAT_OUTPUT_DIR}/$<TARGET_FILE_NAME:stationchat>"
