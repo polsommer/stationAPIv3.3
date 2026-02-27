@@ -50,20 +50,15 @@ StationChatConfig BuildConfiguration(int argc, const char* argv[]) {
     StationChatConfig config;
     std::string configFile;
 
-    auto ResolveDefaultPath = [](const std::string& selectedPath, const std::vector<std::string>& fallbackPaths) {
-        std::ifstream selected(selectedPath.c_str());
-        if (selected.good()) {
-            return selectedPath;
-        }
-
-        for (const auto& fallbackPath : fallbackPaths) {
-            std::ifstream fallback(fallbackPath.c_str());
-            if (fallback.good()) {
-                return fallbackPath;
+    auto ResolveDefaultPath = [](const std::vector<std::string>& candidatePaths) {
+        for (const auto& candidatePath : candidatePaths) {
+            std::ifstream candidate(candidatePath.c_str());
+            if (candidate.good()) {
+                return candidatePath;
             }
         }
 
-        return selectedPath;
+        return candidatePaths.empty() ? std::string{} : candidatePaths.front();
     };
 
     // Declare a group of options that will be 
@@ -114,10 +109,10 @@ StationChatConfig BuildConfiguration(int argc, const char* argv[]) {
     po::notify(vm);
 
     if (vm["config"].defaulted()) {
-        configFile = ResolveDefaultPath(configFile, {"swgchat.cfg", "stationchat.cfg"});
+        configFile = ResolveDefaultPath({"swgchat.cfg", "stationchat.cfg", configFile});
     }
     if (vm["logger_config"].defaulted()) {
-        config.loggerConfig = ResolveDefaultPath(config.loggerConfig, {"logger.cfg"});
+        config.loggerConfig = ResolveDefaultPath({"logger.cfg", config.loggerConfig});
     }
 
     std::ifstream ifs(configFile.c_str());
