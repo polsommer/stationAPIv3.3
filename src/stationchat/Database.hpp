@@ -87,7 +87,11 @@ public:
     virtual const DatabaseCapabilities& Capabilities() const = 0;
 };
 
-inline std::string IgnoreTableIdentifierForBackend(const std::string& /*backendName*/) {
+inline std::string IgnoreTableIdentifierForBackend(const std::string& backendName) {
+    if (backendName != "mariadb") {
+        throw std::invalid_argument("IgnoreTableIdentifierForBackend supports only mariadb");
+    }
+
     return "`ignore`";
 }
 

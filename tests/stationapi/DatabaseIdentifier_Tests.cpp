@@ -25,7 +25,11 @@ private:
 
 SCENARIO("ignore table identifier uses MariaDB-safe quoting", "[database]") {
     REQUIRE(IgnoreTableIdentifierForBackend("mariadb") == "`ignore`");
-    REQUIRE(IgnoreTableIdentifierForBackend("unexpected") == "`ignore`");
+}
+
+SCENARIO("ignore table identifier rejects unsupported backends", "[database]") {
+    REQUIRE_THROWS_AS(IgnoreTableIdentifierForBackend("sqlite"), std::invalid_argument);
+    REQUIRE_THROWS_AS(IgnoreTableIdentifierForBackend("unexpected"), std::invalid_argument);
 }
 
 SCENARIO("ignore table identifier can be resolved from a database connection", "[database]") {
