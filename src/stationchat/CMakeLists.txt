@@ -76,7 +76,7 @@ endif()
 
 add_executable(stationchat ${STATIONCHAT_SOURCES})
 
-target_link_libraries(stationchat
+target_link_libraries(stationchat PRIVATE
     stationapi
     ${Boost_LIBRARIES}
     $<$<PLATFORM_ID:Windows>:ws2_32>)
