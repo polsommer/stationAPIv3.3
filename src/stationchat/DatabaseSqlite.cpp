@@ -21,14 +21,7 @@ public:
     SqliteStatement(sqlite3* db, const std::string& sql)
         : db_{db}
         , stmt_{nullptr} {
-        std::string sqlForSqlite = sql;
-        const std::string insertIgnore = "INSERT IGNORE INTO";
-        const auto insertIgnorePos = sqlForSqlite.find(insertIgnore);
-        if (insertIgnorePos != std::string::npos) {
-            sqlForSqlite.replace(insertIgnorePos, insertIgnore.size(), "INSERT OR IGNORE INTO");
-        }
-
-        normalizedSql_ = NormalizeNamedParameters(sqlForSqlite);
+        normalizedSql_ = NormalizeNamedParameters(sql);
 
         auto result = sqlite3_prepare_v2(db_, normalizedSql_.sql.c_str(), -1, &stmt_, nullptr);
         if (result != SQLITE_OK) {
@@ -153,7 +146,8 @@ private:
 } // namespace
 
 SqliteDatabaseConnection::SqliteDatabaseConnection(const std::string& path)
-    : db_{nullptr} {
+    : db_{nullptr}
+    , capabilities_{UpsertStrategy::InsertOrIgnore, BlobSemantics::NativeBlob, TransactionIsolationSupport::SerializableOnly} {
     if (sqlite3_open(path.c_str(), &db_) != SQLITE_OK) {
         throw MakeSqliteError(db_, sqlite3_errcode(db_), "open database failed");
     }
@@ -172,3 +166,7 @@ std::unique_ptr<ITransaction> SqliteDatabaseConnection::BeginTransaction() {
 uint64_t SqliteDatabaseConnection::GetLastInsertId() const {
     return static_cast<uint64_t>(sqlite3_last_insert_rowid(db_));
 }
+
+std::string SqliteDatabaseConnection::BackendName() const { return "sqlite"; }
+
+const DatabaseCapabilities& SqliteDatabaseConnection::Capabilities() const { return capabilities_; }

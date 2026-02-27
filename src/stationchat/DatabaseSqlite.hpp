@@ -13,9 +13,12 @@ public:
     std::unique_ptr<IStatement> Prepare(const std::string& sql) override;
     std::unique_ptr<ITransaction> BeginTransaction() override;
     uint64_t GetLastInsertId() const override;
+    std::string BackendName() const override;
+    const DatabaseCapabilities& Capabilities() const override;
 
     sqlite3* GetNativeHandle() const { return db_; }
 
 private:
     sqlite3* db_;
+    DatabaseCapabilities capabilities_;
 };

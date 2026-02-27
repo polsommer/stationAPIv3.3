@@ -266,7 +266,8 @@ struct MariaDbDatabaseConnection::Impl {
 
 MariaDbDatabaseConnection::MariaDbDatabaseConnection(const std::string& host, uint16_t port,
     const std::string& user, const std::string& password, const std::string& schema)
-    : impl_{std::make_unique<Impl>()} {
+    : impl_{std::make_unique<Impl>()}
+    , capabilities_{UpsertStrategy::InsertIgnore, BlobSemantics::HexEncodedLiteral, TransactionIsolationSupport::ReadCommitted} {
     impl_->handle = mysql_init(nullptr);
     if (!impl_->handle) {
         throw DatabaseException("mariadb", 0, "init failed");
@@ -308,3 +309,7 @@ std::unique_ptr<ITransaction> MariaDbDatabaseConnection::BeginTransaction() {
 uint64_t MariaDbDatabaseConnection::GetLastInsertId() const {
     return static_cast<uint64_t>(mysql_insert_id(impl_->handle));
 }
+
+std::string MariaDbDatabaseConnection::BackendName() const { return "mariadb"; }
+
+const DatabaseCapabilities& MariaDbDatabaseConnection::Capabilities() const { return capabilities_; }

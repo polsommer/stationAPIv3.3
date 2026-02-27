@@ -6,6 +6,23 @@
 
 #include "easylogging++.h"
 
+namespace {
+std::string BuildInsertIgnoreSql(const IDatabaseConnection* db, const std::string& tableName,
+    const std::string& columns, const std::string& values) {
+    switch (db->Capabilities().upsertStrategy) {
+    case UpsertStrategy::InsertIgnore:
+        return "INSERT IGNORE INTO " + tableName + " (" + columns + ") VALUES (" + values + ")";
+    case UpsertStrategy::InsertOrIgnore:
+        return "INSERT OR IGNORE INTO " + tableName + " (" + columns + ") VALUES (" + values + ")";
+    case UpsertStrategy::InsertOnConflictDoNothing:
+        return "INSERT INTO " + tableName + " (" + columns + ") VALUES (" + values + ") ON CONFLICT DO NOTHING";
+    }
+
+    return "INSERT INTO " + tableName + " (" + columns + ") VALUES (" + values + ")";
+}
+} // namespace
+
+
 ChatRoomService::ChatRoomService(ChatAvatarService* avatarService, IDatabaseConnection* db)
     : avatarService_{avatarService}
     , db_{db} {}
@@ -243,7 +260,7 @@ void ChatRoomService::LoadModerators(ChatRoom * room) {
 }
 
 void ChatRoomService::PersistModerator(uint32_t moderatorId, uint32_t roomId) {
-        char sql[] = "INSERT IGNORE INTO room_moderator (moderator_avatar_id, room_id) VALUES (@moderator_avatar_id, @room_id)";
+        auto sql = BuildInsertIgnoreSql(db_, "room_moderator", "moderator_avatar_id, room_id", "@moderator_avatar_id, @room_id");
 
     StatementHandle stmt{db_->Prepare(sql)};
 
@@ -285,7 +302,7 @@ void ChatRoomService::LoadAdministrators(ChatRoom * room) {
 }
 
 void ChatRoomService::PersistAdministrator(uint32_t administratorId, uint32_t roomId) {
-        char sql[] = "INSERT IGNORE INTO room_administrator (administrator_avatar_id, room_id) VALUES (@administrator_avatar_id, @room_id)";
+        auto sql = BuildInsertIgnoreSql(db_, "room_administrator", "administrator_avatar_id, room_id", "@administrator_avatar_id, @room_id");
 
     StatementHandle stmt{db_->Prepare(sql)};
 
@@ -327,7 +344,7 @@ void ChatRoomService::LoadBanned(ChatRoom * room) {
 }
 
 void ChatRoomService::PersistBanned(uint32_t bannedId, uint32_t roomId) {
-        char sql[] = "INSERT IGNORE INTO room_ban (banned_avatar_id, room_id) VALUES (@banned_avatar_id, @room_id)";
+        auto sql = BuildInsertIgnoreSql(db_, "room_ban", "banned_avatar_id, room_id", "@banned_avatar_id, @room_id");
 
     StatementHandle stmt{db_->Prepare(sql)};
 

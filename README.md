@@ -43,6 +43,25 @@ Then update the **database_path** config option with the full path to the databa
 
 For MariaDB deployments, set **database_engine = mariadb** and fill in **database_host**, **database_port**, **database_user**, **database_password**, and **database_schema** in `swgchat.cfg`.
 
+
+## Schema Versioning and Migrations ##
+
+stationchat now validates schema compatibility during startup for both SQLite and MariaDB:
+
+* selected backend is logged
+* backend capabilities are logged (upsert strategy, blob handling, transaction isolation)
+* current schema version is logged
+* known pending migrations are logged
+
+If the schema is incompatible, stationchat exits immediately with an actionable error.
+
+Migration scripts are versioned and ordered in:
+
+* `extras/migrations/sqlite/`
+* `extras/migrations/mariadb/`
+
+For a clean install, apply the baseline migration `V001__baseline.sql` for your backend.
+
 ## Running ##
 
 A default configuration and database is created when building the project. Configure the listen address/ports in **build/bin/stationchat.cfg**. Then run the following commands from the project root:
@@ -60,3 +79,30 @@ A default configuration and database is created when building the project. Confi
 ## Final Notes ##
 
 It is recommended to copy the **build/bin** directory to another location after building to ensure the configuration files are not overwritten by future changes to the default versions of these files.
+
+
+## Operational Playbook: SQLite -> MariaDB (Minimal Downtime) ##
+
+1. **Prepare MariaDB schema ahead of cutover**
+   * Create target database/schema and credentials.
+   * Apply baseline migration: `extras/migrations/mariadb/V001__baseline.sql`.
+
+2. **Warm copy data from SQLite while chat is still online**
+   * Export SQLite data using `.mode insert` or equivalent tooling.
+   * Transform/import into MariaDB tables (`avatar`, `room`, `room_*`, `persistent_message`, `friend`, `ignore`).
+   * Keep `schema_version` at `version=1`.
+
+3. **Short write-freeze cutover window**
+   * Stop stationchat briefly (or block new writes at the ingress layer).
+   * Export and apply only final delta changes from SQLite to MariaDB.
+
+4. **Switch configuration and restart**
+   * Set `database_engine = mariadb`.
+   * Set `database_host`, `database_port`, `database_user`, `database_password`, `database_schema`.
+   * Start stationchat and verify startup logs report MariaDB backend and matching schema version.
+
+5. **Post-cutover validation**
+   * Validate login/chat room discovery/persistent mail workflows.
+   * Keep original SQLite file as rollback artifact until confidence window expires.
+
+This approach minimizes downtime to the final delta sync and restart interval.

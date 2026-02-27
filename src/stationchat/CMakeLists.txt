@@ -44,6 +44,8 @@ add_executable(
   Database.hpp
   DatabaseFactory.cpp
   DatabaseFactory.hpp
+  DatabaseBootstrap.cpp
+  DatabaseBootstrap.hpp
   DatabaseMariaDb.cpp
   DatabaseMariaDb.hpp
   DatabaseSqlite.cpp

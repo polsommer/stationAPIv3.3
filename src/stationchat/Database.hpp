@@ -56,6 +56,28 @@ public:
     virtual void Rollback() = 0;
 };
 
+enum class UpsertStrategy {
+    InsertIgnore,
+    InsertOrIgnore,
+    InsertOnConflictDoNothing
+};
+
+enum class BlobSemantics {
+    NativeBlob,
+    HexEncodedLiteral
+};
+
+enum class TransactionIsolationSupport {
+    SerializableOnly,
+    ReadCommitted
+};
+
+struct DatabaseCapabilities {
+    UpsertStrategy upsertStrategy;
+    BlobSemantics blobSemantics;
+    TransactionIsolationSupport transactionIsolationSupport;
+};
+
 class IDatabaseConnection {
 public:
     virtual ~IDatabaseConnection() = default;
@@ -63,6 +85,8 @@ public:
     virtual std::unique_ptr<IStatement> Prepare(const std::string& sql) = 0;
     virtual std::unique_ptr<ITransaction> BeginTransaction() = 0;
     virtual uint64_t GetLastInsertId() const = 0;
+    virtual std::string BackendName() const = 0;
+    virtual const DatabaseCapabilities& Capabilities() const = 0;
 };
 
 class StatementHandle {
