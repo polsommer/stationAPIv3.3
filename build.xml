@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="stationapi" default="build" basedir=".">
+    <description>
+        Apache Ant wrapper around the CMake build for stationapi/stationchat.
+
+        Common commands:
+          ant configure
+          ant build
+          ant compile_chat
+          ant test
+          ant run
+          ant clean
+
+        Optional properties:
+          -Dbuild.type=Debug
+          -Dcmake.generator="Ninja"
+    </description>
+
+    <property name="build.dir" value="${basedir}/build"/>
+    <property name="build.type" value="Release"/>
+
+    <condition property="has.cmake.generator">
+        <and>
+            <isset property="cmake.generator"/>
+            <not>
+                <equals arg1="${cmake.generator}" arg2="" trim="true"/>
+            </not>
+        </and>
+    </condition>
+
+    <target name="init">
+        <mkdir dir="${build.dir}"/>
+    </target>
+
+    <target name="configure" depends="init,configure-with-generator,configure-default" description="Run CMake configure step."/>
+
+    <target name="configure-with-generator" if="has.cmake.generator">
+        <exec executable="cmake" dir="${build.dir}" failonerror="true">
+            <arg value="-G"/>
+            <arg value="${cmake.generator}"/>
+            <arg value="-DCMAKE_BUILD_TYPE=${build.type}"/>
+            <arg value=".."/>
+        </exec>
+    </target>
+
+    <target name="configure-default" unless="has.cmake.generator">
+        <exec executable="cmake" dir="${build.dir}" failonerror="true">
+            <arg value="-DCMAKE_BUILD_TYPE=${build.type}"/>
+            <arg value=".."/>
+        </exec>
+    </target>
+
+    <target name="build" depends="configure" description="Build all targets.">
+        <exec executable="cmake" dir="${build.dir}" failonerror="true">
+            <arg value="--build"/>
+            <arg value="."/>
+            <arg value="--config"/>
+            <arg value="${build.type}"/>
+        </exec>
+    </target>
+
+    <target name="compile_chat" depends="configure" description="Build only the stationchat target.">
+        <exec executable="cmake" dir="${build.dir}" failonerror="true">
+            <arg value="--build"/>
+            <arg value="."/>
+            <arg value="--target"/>
+            <arg value="stationchat"/>
+            <arg value="--config"/>
+            <arg value="${build.type}"/>
+        </exec>
+    </target>
+
+    <target name="test" depends="build" description="Run ctest for the current build.">
+        <exec executable="ctest" dir="${build.dir}" failonerror="true">
+            <arg value="--output-on-failure"/>
+            <arg value="-C"/>
+            <arg value="${build.type}"/>
+        </exec>
+    </target>
+
+    <target name="run" depends="build" description="Run stationchat binary from the build output.">
+        <exec executable="${build.dir}/bin/stationchat" failonerror="true" osfamily="unix"/>
+        <exec executable="${build.dir}/bin/${build.type}/stationchat.exe" failonerror="true" osfamily="windows"/>
+    </target>
+
+    <target name="clean" description="Delete build output directory.">
+        <delete dir="${build.dir}"/>
+    </target>
+</project>

@@ -1,3 +1,4 @@
 externals/udplibrary
 build*
+!build.xml
 .vscode/
