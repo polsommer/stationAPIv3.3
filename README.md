@@ -18,7 +18,7 @@ Uses the SOE libraries to implement chat features in a standalone utility. Ideal
 
 * c++14 compatible compiler
 * boost::program_options
-* MariaDB Connector/C
+* MariaDB Connector/C (**required**)
 * udplibrary - bundled in the Star Wars Galaxies official source
 
 ## Building ##
@@ -31,8 +31,13 @@ Copy the udplibrary directory from the Star Wars Galaxies offical source to the 
 
 ## Database Initialization ##
 
-stationchat uses MariaDB for runtime storage. Set **database_engine = mariadb** and fill in **database_host**, **database_port**, **database_user**, **database_password**, and **database_schema** in `swgchat.cfg`.
+stationchat uses MariaDB for all runtime storage.
 
+1. Create a MariaDB schema for stationchat.
+2. Set **database_engine = mariadb** and fill in **database_host**, **database_port**, **database_user**, **database_password**, and **database_schema** in `swgchat.cfg`.
+3. Apply the baseline migration:
+
+       mysql -h <host> -P <port> -u <user> -p <schema> < extras/migrations/mariadb/V001__baseline.sql
 
 ## Schema Versioning and Migrations ##
 
@@ -45,13 +50,13 @@ stationchat validates MariaDB schema compatibility during startup:
 
 If the schema is incompatible, stationchat exits immediately with an actionable error.
 
-Migration scripts are versioned and ordered in `extras/migrations/mariadb/`.
+Migration scripts are MariaDB-only, versioned, and ordered in `extras/migrations/mariadb/`.
 
-For a clean install, apply the baseline migration `V001__baseline.sql` for MariaDB.
+For upgrades, apply newer MariaDB migration files in version order.
 
 ## Running ##
 
-A default configuration and database is created when building the project. Configure the listen address/ports in **build/bin/stationchat.cfg**. Then run the following commands from the project root:
+A default configuration is created when building the project. Configure the listen address/ports and ensure **database_engine = mariadb** in **build/bin/stationchat.cfg**. Then run the following commands from the project root:
 
 ### Windows ###
 
