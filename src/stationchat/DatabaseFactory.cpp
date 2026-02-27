@@ -83,6 +83,21 @@ std::unique_ptr<IDatabaseConnection> CreateDatabaseConnection(const StationChatC
 
     if (config.databaseEngine == "mariadb") {
 #if defined(STATIONCHAT_WITH_MARIADB)
+        std::vector<std::string> missing;
+        if (config.databaseUser.empty()) {
+            missing.emplace_back("database_user");
+        }
+        if (config.databaseSchema.empty()) {
+            missing.emplace_back("database_schema");
+        }
+
+        if (!missing.empty()) {
+            throw DatabaseException("database", 0,
+                "database_engine=mariadb requires " + Join(missing)
+                + "; set these in swgchat.cfg (or pass --database_user/--database_schema). "
+                + "To use legacy SQLite mode, set database_engine=sqlite and configure database_path");
+        }
+
         connection = std::make_unique<MariaDbDatabaseConnection>(
             config.databaseHost,
             config.databasePort,
