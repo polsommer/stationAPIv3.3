@@ -9,7 +9,9 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <thread>
+#include <vector>
 
 #ifdef __GNUC__
 #include <execinfo.h>
@@ -47,6 +49,22 @@ StationChatConfig BuildConfiguration(int argc, const char* argv[]) {
     namespace po = boost::program_options;
     StationChatConfig config;
     std::string configFile;
+
+    auto ResolveDefaultPath = [](const std::string& selectedPath, const std::vector<std::string>& fallbackPaths) {
+        std::ifstream selected(selectedPath.c_str());
+        if (selected.good()) {
+            return selectedPath;
+        }
+
+        for (const auto& fallbackPath : fallbackPaths) {
+            std::ifstream fallback(fallbackPath.c_str());
+            if (fallback.good()) {
+                return fallbackPath;
+            }
+        }
+
+        return selectedPath;
+    };
 
     // Declare a group of options that will be 
     // allowed only on command line
@@ -94,6 +112,13 @@ StationChatConfig BuildConfiguration(int argc, const char* argv[]) {
     po::variables_map vm;
     po::store(po::command_line_parser(argc, argv).options(cmdline_options).allow_unregistered().run(), vm);
     po::notify(vm);
+
+    if (vm["config"].defaulted()) {
+        configFile = ResolveDefaultPath(configFile, {"swgchat.cfg", "stationchat.cfg"});
+    }
+    if (vm["logger_config"].defaulted()) {
+        config.loggerConfig = ResolveDefaultPath(config.loggerConfig, {"logger.cfg"});
+    }
 
     std::ifstream ifs(configFile.c_str());
     if (!ifs) {
