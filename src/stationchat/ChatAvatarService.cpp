@@ -106,7 +106,7 @@ void ChatAvatarService::PersistFriend(
 }
 
 void ChatAvatarService::PersistIgnore(uint32_t srcAvatarId, uint32_t destAvatarId) {
-        char sql[] = "INSERT INTO ignore (avatar_id, ignore_avatar_id, comment) VALUES (@avatar_id, "
+        char sql[] = "INSERT INTO ignore (avatar_id, ignore_avatar_id) VALUES (@avatar_id, "
                  "@ignore_avatar_id)";
 
     auto stmt = db_->Prepare(sql);

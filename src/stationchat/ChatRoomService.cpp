@@ -341,7 +341,7 @@ void ChatRoomService::PersistBanned(uint32_t bannedId, uint32_t roomId) {
 
     auto stmt = db_->Prepare(sql);
 
-    int bannedAvatarIdIdx = stmt->BindParameterIndex("@moderator_avatar_id");
+    int bannedAvatarIdIdx = stmt->BindParameterIndex("@banned_avatar_id");
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
 
     stmt->BindInt(bannedAvatarIdIdx, bannedId);

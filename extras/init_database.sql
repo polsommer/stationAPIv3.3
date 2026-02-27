@@ -22,10 +22,10 @@ CREATE TABLE room (id INTEGER PRIMARY KEY,
                    UNIQUE(room_name, room_address),
                    FOREIGN KEY(creator_id) REFERENCES avatar(id));
 
-CREATE TABLE room_administrator (admin_avatar_id INTEGER,
+CREATE TABLE room_administrator (administrator_avatar_id INTEGER,
                                  room_id INTEGER,
-                                 PRIMARY KEY(admin_avatar_id, room_id),
-                                 FOREIGN KEY(admin_avatar_id) REFERENCES avatar(id) ON DELETE CASCADE,
+                                 PRIMARY KEY(administrator_avatar_id, room_id),
+                                 FOREIGN KEY(administrator_avatar_id) REFERENCES avatar(id) ON DELETE CASCADE,
                                  FOREIGN KEY(room_id) REFERENCES room(id) ON DELETE CASCADE);
 
 CREATE TABLE room_moderator (moderator_avatar_id INTEGER,
@@ -68,6 +68,6 @@ CREATE TABLE friend (avatar_id INTEGER,
 
 CREATE TABLE ignore (avatar_id INTEGER,
                      ignore_avatar_id INTEGER,
-                     PRIMARY KEY(avatar_id, ignore_avatar_id)
+                     PRIMARY KEY(avatar_id, ignore_avatar_id),
                      FOREIGN KEY(avatar_id) REFERENCES avatar(id) ON DELETE CASCADE,
                      FOREIGN KEY(ignore_avatar_id) REFERENCES avatar(id) ON DELETE CASCADE);
