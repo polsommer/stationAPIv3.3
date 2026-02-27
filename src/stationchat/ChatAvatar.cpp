@@ -32,7 +32,7 @@ void ChatAvatar::RemoveFriend(const ChatAvatar* avatar) {
         [avatar](auto& frnd) { return frnd.frnd->GetAvatarId() == avatar->GetAvatarId(); });
 
     if (del_iter != std::end(friendList_)) {
-        friendList_.erase(del_iter);
+        friendList_.erase(del_iter, std::end(friendList_));
 
         avatarService_->RemoveFriend(avatarId_, avatar->avatarId_);
     }
@@ -73,7 +73,7 @@ void ChatAvatar::RemoveIgnore(const ChatAvatar* avatar) {
         [avatar](auto& ignored) { return ignored.ignored->GetAvatarId() == avatar->GetAvatarId(); });
 
     if (del_iter != std::end(ignoreList_)) {
-        ignoreList_.erase(del_iter);
+        ignoreList_.erase(del_iter, std::end(ignoreList_));
 
         avatarService_->RemoveIgnore(avatarId_, avatar->avatarId_);
     }

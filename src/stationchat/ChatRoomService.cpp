@@ -108,8 +108,9 @@ void ChatRoomService::DestroyRoom(ChatRoom* room) {
         DeleteRoom(room);
     }
 
-    rooms_.erase(std::remove_if(std::begin(rooms_), std::end(rooms_),
-        [room](const auto& trackedRoom) { return trackedRoom->GetRoomId() == room->GetRoomId(); }));
+    auto newEnd = std::remove_if(std::begin(rooms_), std::end(rooms_),
+        [room](const auto& trackedRoom) { return trackedRoom->GetRoomId() == room->GetRoomId(); });
+    rooms_.erase(newEnd, std::end(rooms_));
 }
 
 ChatResultCode ChatRoomService::PersistNewRoom(ChatRoom& room) {
