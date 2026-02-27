@@ -12,6 +12,7 @@ add_library(
 target_include_directories(
   stationapi
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/externals/catch
-         ${PROJECT_SOURCE_DIR}/externals/easyloggingpp ${Boost_INCLUDE_DIRS})
+         ${PROJECT_SOURCE_DIR}/externals/easyloggingpp ${UDPLIBRARY_SOURCE_DIR}
+         ${Boost_INCLUDE_DIRS})
 
 target_link_libraries(stationapi udplibrary)
