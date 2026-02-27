@@ -4,7 +4,9 @@
 
 #include <mysql/mysql.h>
 
+#include <algorithm>
 #include <array>
+#include <cctype>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -42,6 +44,63 @@ std::string BlobToHex(const uint8_t* data, size_t length) {
     }
     out.push_back('\'');
     return out;
+}
+
+
+std::string ToLowerCopy(const std::string& value) {
+    std::string out = value;
+    std::transform(out.begin(), out.end(), out.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    return out;
+}
+
+void SetOptionalStringOption(MYSQL* handle, enum mysql_option option, const std::string& value,
+    const std::string& optionName) {
+    if (value.empty()) {
+        return;
+    }
+
+    if (mysql_options(handle, option, value.c_str()) != 0) {
+        throw MakeMariaDbError(handle, mysql_errno(handle), "set " + optionName + " failed");
+    }
+}
+
+void ConfigureTls(MYSQL* handle, const std::string& sslMode, const std::string& sslCa,
+    const std::string& sslCaPath, const std::string& sslCert, const std::string& sslKey) {
+    const bool hasTlsConfig = !sslMode.empty() || !sslCa.empty() || !sslCaPath.empty() || !sslCert.empty() || !sslKey.empty();
+    if (!hasTlsConfig) {
+        return;
+    }
+
+    if (!sslMode.empty()) {
+        const std::string normalized = ToLowerCopy(sslMode);
+        enum mysql_ssl_mode mode;
+        if (normalized == "disabled") {
+            mode = SSL_MODE_DISABLED;
+        } else if (normalized == "preferred") {
+            mode = SSL_MODE_PREFERRED;
+        } else if (normalized == "required") {
+            mode = SSL_MODE_REQUIRED;
+        } else if (normalized == "verify_ca") {
+            mode = SSL_MODE_VERIFY_CA;
+        } else if (normalized == "verify_identity") {
+            mode = SSL_MODE_VERIFY_IDENTITY;
+        } else {
+            throw DatabaseException("mariadb", 0,
+                "invalid database_ssl_mode '" + sslMode
+                + "'; expected one of: disabled, preferred, required, verify_ca, verify_identity");
+        }
+
+        if (mysql_options(handle, MYSQL_OPT_SSL_MODE, &mode) != 0) {
+            throw MakeMariaDbError(handle, mysql_errno(handle), "set database_ssl_mode failed");
+        }
+    }
+
+    SetOptionalStringOption(handle, MYSQL_OPT_SSL_CA, sslCa, "database_ssl_ca");
+    SetOptionalStringOption(handle, MYSQL_OPT_SSL_CAPATH, sslCaPath, "database_ssl_capath");
+    SetOptionalStringOption(handle, MYSQL_OPT_SSL_CERT, sslCert, "database_ssl_cert");
+    SetOptionalStringOption(handle, MYSQL_OPT_SSL_KEY, sslKey, "database_ssl_key");
 }
 
 class MariaDbStatement final : public IStatement {
@@ -265,13 +324,17 @@ struct MariaDbDatabaseConnection::Impl {
 };
 
 MariaDbDatabaseConnection::MariaDbDatabaseConnection(const std::string& host, uint16_t port,
-    const std::string& user, const std::string& password, const std::string& schema)
+    const std::string& user, const std::string& password, const std::string& schema,
+    const std::string& sslMode, const std::string& sslCa, const std::string& sslCaPath,
+    const std::string& sslCert, const std::string& sslKey)
     : impl_{std::make_unique<Impl>()}
     , capabilities_{UpsertStrategy::InsertIgnore, BlobSemantics::HexEncodedLiteral, TransactionIsolationSupport::ReadCommitted} {
     impl_->handle = mysql_init(nullptr);
     if (!impl_->handle) {
         throw DatabaseException("mariadb", 0, "init failed");
     }
+
+    ConfigureTls(impl_->handle, sslMode, sslCa, sslCaPath, sslCert, sslKey);
 
     if (!mysql_real_connect(impl_->handle, host.c_str(), user.c_str(), password.c_str(),
             schema.empty() ? nullptr : schema.c_str(), port, nullptr, 0)) {

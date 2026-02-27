@@ -76,7 +76,12 @@ std::unique_ptr<IDatabaseConnection> CreateDatabaseConnection(const StationChatC
         config.databasePort,
         config.databaseUser,
         config.databasePassword,
-        config.databaseSchema);
+        config.databaseSchema,
+        config.databaseSslMode,
+        config.databaseSslCa,
+        config.databaseSslCaPath,
+        config.databaseSslCert,
+        config.databaseSslKey);
 #else
     throw DatabaseException("database", 0,
         "unsupported database_engine 'mariadb'; this binary was built without MariaDB support");

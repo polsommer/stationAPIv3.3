@@ -18,8 +18,16 @@ database_engine = mariadb
 database_host = mysql73.unoeuro.com
 database_port = 3306
 database_user = swgplus_com
+# Optional: can also be provided through STATIONCHAT_DB_PASSWORD (env var takes precedence)
 database_password =
 database_schema = swgplus_com_db
+
+# Optional TLS settings for MariaDB; keep empty for legacy/default behavior
+database_ssl_mode =
+database_ssl_ca =
+database_ssl_capath =
+database_ssl_cert =
+database_ssl_key =
 
 # When set to true, binds to the config address; otherwise, binds on any interface
 bind_to_ip = false
