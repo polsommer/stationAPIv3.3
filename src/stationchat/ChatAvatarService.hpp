@@ -10,11 +10,11 @@
 #include <string>
 #include <unordered_map>
 
-struct sqlite3;
+class IDatabaseConnection;
 
 class ChatAvatarService {
 public:
-    explicit ChatAvatarService(sqlite3* db);
+    explicit ChatAvatarService(IDatabaseConnection* db);
     ~ChatAvatarService();
     
     ChatAvatar* GetAvatar(const std::u16string& name, const std::u16string& address);
@@ -61,5 +61,5 @@ private:
 
     std::vector<std::unique_ptr<ChatAvatar>> avatarCache_;
     std::vector<ChatAvatar*> onlineAvatars_;
-    sqlite3* db_;
+    IDatabaseConnection* db_;
 };

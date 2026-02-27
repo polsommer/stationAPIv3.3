@@ -10,8 +10,18 @@ registrar_address = 127.0.0.1
 # Port the registrar server will listen for connections on
 registrar_port = 5000
 
-# Path to the application database
+# Database engine: sqlite or mariadb
+database_engine = sqlite
+
+# Path to the sqlite database file (used when database_engine=sqlite)
 database_path = var/stationapi/stationchat.db
+
+# MariaDB connection fields (used when database_engine=mariadb)
+database_host = 127.0.0.1
+database_port = 3306
+database_user =
+database_password =
+database_schema =
 
 # When set to true, binds to the config address; otherwise, binds on any interface
 bind_to_ip = false

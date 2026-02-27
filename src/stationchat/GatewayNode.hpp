@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "Node.hpp"
@@ -10,8 +9,8 @@
 class ChatAvatarService;
 class ChatRoomService;
 class PersistentMessageService;
+class IDatabaseConnection;
 struct StationChatConfig;
-struct sqlite3;
 
 class GatewayNode : public Node<GatewayNode, GatewayClient> {
 public:
@@ -41,5 +40,5 @@ private:
     std::unique_ptr<PersistentMessageService> messageService_;
     std::map<std::u16string, GatewayClient*> clientAddressMap_;
     StationChatConfig& config_;
-    sqlite3* db_;
+    std::unique_ptr<IDatabaseConnection> db_;
 };
