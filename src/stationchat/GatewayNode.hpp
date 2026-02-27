@@ -12,6 +12,10 @@ class PersistentMessageService;
 class IDatabaseConnection;
 struct StationChatConfig;
 
+namespace policy {
+class PolicyEngine;
+}
+
 class GatewayNode : public Node<GatewayNode, GatewayClient> {
 public:
     explicit GatewayNode(StationChatConfig& config);
@@ -21,6 +25,7 @@ public:
     ChatRoomService* GetRoomService();
     PersistentMessageService* GetMessageService();
     StationChatConfig& GetConfig();
+    policy::PolicyEngine* GetPolicyEngine();
 
     void RegisterClientAddress(const std::u16string& address, GatewayClient* client);
 
@@ -41,4 +46,5 @@ private:
     std::map<std::u16string, GatewayClient*> clientAddressMap_;
     StationChatConfig& config_;
     std::unique_ptr<IDatabaseConnection> db_;
+    std::unique_ptr<policy::PolicyEngine> policyEngine_;
 };

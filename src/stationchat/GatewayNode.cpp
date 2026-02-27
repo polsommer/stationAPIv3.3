@@ -5,6 +5,7 @@
 #include "DatabaseFactory.hpp"
 #include "PersistentMessageService.hpp"
 #include "StationChatConfig.hpp"
+#include "policy/PolicyEngine.hpp"
 
 GatewayNode::GatewayNode(StationChatConfig& config)
     : Node(this, config.gatewayAddress, config.gatewayPort, config.bindToIp)
@@ -13,6 +14,7 @@ GatewayNode::GatewayNode(StationChatConfig& config)
     avatarService_ = std::make_unique<ChatAvatarService>(db_.get());
     roomService_ = std::make_unique<ChatRoomService>(avatarService_.get(), db_.get());
     messageService_ = std::make_unique<PersistentMessageService>(db_.get());
+    policyEngine_ = std::make_unique<policy::PolicyEngine>(config_);
 }
 
 GatewayNode::~GatewayNode() = default;
@@ -26,6 +28,10 @@ PersistentMessageService* GatewayNode::GetMessageService() {
 }
 
 StationChatConfig& GatewayNode::GetConfig() { return config_; }
+
+policy::PolicyEngine* GatewayNode::GetPolicyEngine() {
+    return policyEngine_.get();
+}
 
 void GatewayNode::RegisterClientAddress(const std::u16string & address, GatewayClient * client) {
     clientAddressMap_[address] = client;

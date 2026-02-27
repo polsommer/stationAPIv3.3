@@ -26,4 +26,10 @@ struct StationChatConfig {
 
     std::string loggerConfig;
     bool bindToIp;
+
+    bool policyEnabled = false;
+    bool policyShadowMode = true;
+    int policySoftWarnThreshold = 35;
+    int policyThrottleThreshold = 60;
+    int policyBlockThreshold = 85;
 };

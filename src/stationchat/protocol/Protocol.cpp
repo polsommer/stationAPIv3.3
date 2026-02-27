@@ -9,6 +9,9 @@
 #include "RegistrarNode.hpp"
 #include "StringUtils.hpp"
 #include "StationChatConfig.hpp"
+#include "policy/PolicyDecision.hpp"
+#include "policy/PolicyEngine.hpp"
+#include "policy/PolicyEvent.hpp"
 
 #include "protocol/AddBan.hpp"
 #include "protocol/AddFriend.hpp"
@@ -47,6 +50,37 @@
 
 #include "easylogging++.h"
 
+namespace {
+
+void EvaluatePolicyEvent(GatewayClient* client, const policy::Event& event) {
+    auto* node = client->GetNode();
+    auto* engine = node->GetPolicyEngine();
+    if (engine == nullptr) {
+        return;
+    }
+
+    const auto decision = engine->Evaluate(event);
+    const auto& config = node->GetConfig();
+
+    LOG(INFO) << "POLICY action=" << static_cast<int>(event.action)
+              << " actorId=" << event.actorId
+              << " address=" << event.actorAddress
+              << " target=" << event.target
+              << " score=" << decision.riskScore
+              << " decision=" << policy::ToString(decision.type)
+              << " reason=" << decision.reason
+              << " shadow_mode=" << (config.policyShadowMode ? "true" : "false");
+
+    if (config.policyEnabled && !config.policyShadowMode
+        && decision.type != policy::DecisionType::Allow) {
+        LOG(WARNING) << "POLICY enforcement requested for actorId=" << event.actorId
+                     << " decision=" << policy::ToString(decision.type)
+                     << " (no behavior changes implemented yet)";
+    }
+}
+
+} // namespace
+
 AddBan::AddBan(GatewayClient* client, const RequestType& request, ResponseType& response)
     : avatarService_{client->GetNode()->GetAvatarService()}
     , roomService_{client->GetNode()->GetRoomService()} {
@@ -73,6 +107,16 @@ AddBan::AddBan(GatewayClient* client, const RequestType& request, ResponseType& 
     }
 
     response.destRoomId = room->GetRoomId();
+
+    EvaluatePolicyEvent(client, policy::Event{
+        policy::ActionType::Ban,
+        srcAvatar->GetAvatarId(),
+        FromWideString(srcAvatar->GetAddress()),
+        FromWideString(request.destRoomAddress),
+        0u,
+        true,
+        true
+    });
 
     room->AddBanned(srcAvatar->GetAvatarId(), bannedAvatar);
 }
@@ -142,6 +186,16 @@ AddInvite::AddInvite(GatewayClient* client, const RequestType& request, Response
     }
 
     response.destRoomId = room->GetRoomId();
+
+    EvaluatePolicyEvent(client, policy::Event{
+        policy::ActionType::Invite,
+        srcAvatar->GetAvatarId(),
+        FromWideString(srcAvatar->GetAddress()),
+        FromWideString(request.destRoomAddress),
+        0u,
+        true,
+        true
+    });
 
     room->AddInvite(srcAvatar->GetAvatarId(), invitedAvatar);
 }
@@ -254,6 +308,17 @@ EnterRoom::EnterRoom(GatewayClient* client, const RequestType& request, Response
     }
 
     response.roomId = response.room->GetRoomId();
+
+    EvaluatePolicyEvent(client, policy::Event{
+        policy::ActionType::RoomJoin,
+        srcAvatar->GetAvatarId(),
+        FromWideString(srcAvatar->GetAddress()),
+        FromWideString(request.roomAddress),
+        request.roomPassword.size(),
+        true,
+        true
+    });
+
     response.room->EnterRoom(srcAvatar, request.roomPassword);
 
     client->SendEnterRoomUpdate(srcAvatar, response.room);
@@ -275,6 +340,16 @@ FailoverReLoginAvatar::FailoverReLoginAvatar(
     }
 
     CHECK_NOTNULL(avatar);
+
+    EvaluatePolicyEvent(client, policy::Event{
+        policy::ActionType::Login,
+        avatar->GetAvatarId(),
+        FromWideString(request.address),
+        FromWideString(request.loginLocation),
+        0u,
+        true,
+        true
+    });
 
     avatarService_->LoginAvatar(avatar);
 
@@ -443,6 +518,16 @@ LoginAvatar::LoginAvatar(GatewayClient* client, const RequestType& request, Resp
     }
 
     CHECK_NOTNULL(avatar);
+
+    EvaluatePolicyEvent(client, policy::Event{
+        policy::ActionType::Login,
+        avatar->GetAvatarId(),
+        FromWideString(request.address),
+        FromWideString(request.loginLocation),
+        0u,
+        true,
+        true
+    });
 
     avatarService_->LoginAvatar(avatar);
 
@@ -627,6 +712,16 @@ SendInstantMessage::SendInstantMessage(
         throw ChatResultException(ChatResultCode::IGNORING);
     }
 
+    EvaluatePolicyEvent(client, policy::Event{
+        policy::ActionType::MessageSend,
+        srcAvatar->GetAvatarId(),
+        FromWideString(srcAvatar->GetAddress()),
+        FromWideString(request.destAddress),
+        request.message.size() + request.oob.size(),
+        true,
+        true
+    });
+
     client->SendInstantMessageUpdate(srcAvatar, destAvatar, request.message, request.oob);
 }
 
@@ -692,6 +787,16 @@ SendRoomMessage::SendRoomMessage(
     }
 
     response.roomId = room->GetRoomId();
+
+    EvaluatePolicyEvent(client, policy::Event{
+        policy::ActionType::MessageSend,
+        srcAvatar->GetAvatarId(),
+        FromWideString(srcAvatar->GetAddress()),
+        FromWideString(request.destRoomAddress),
+        request.message.size() + request.oob.size(),
+        true,
+        true
+    });
 
     client->SendRoomMessageUpdate(
         srcAvatar, room, room->GetNextMessageId(), request.message, request.oob);
