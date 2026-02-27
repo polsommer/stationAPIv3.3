@@ -5,6 +5,17 @@
 #include <sqlite3.h>
 
 namespace {
+
+DatabaseException MakeSqliteError(sqlite3* db, int code, const std::string& context) {
+    const char* rawMessage = db ? sqlite3_errmsg(db) : nullptr;
+    std::string message = rawMessage ? rawMessage : "unknown sqlite error";
+    return DatabaseException("sqlite", code, context + ": " + message);
+}
+
+DatabaseException MakeSqliteError(int code, const std::string& context, const std::string& message) {
+    return DatabaseException("sqlite", code, context + ": " + message);
+}
+
 class SqliteStatement final : public IStatement {
 public:
     SqliteStatement(sqlite3* db, const std::string& sql)
@@ -21,7 +32,7 @@ public:
 
         auto result = sqlite3_prepare_v2(db_, normalizedSql_.sql.c_str(), -1, &stmt_, nullptr);
         if (result != SQLITE_OK) {
-            throw DatabaseException("sqlite prepare failed: " + std::string(sqlite3_errmsg(db_)));
+            throw MakeSqliteError(db_, result, "prepare failed");
         }
     }
 
@@ -30,7 +41,7 @@ public:
     int BindParameterIndex(const std::string& name) const override {
         auto iter = normalizedSql_.logicalIndexByName.find(name);
         if (iter == normalizedSql_.logicalIndexByName.end()) {
-            throw DatabaseException("sqlite missing parameter: " + name);
+            throw DatabaseException("sqlite", SQLITE_MISUSE, "missing parameter: " + name);
         }
 
         return iter->second;
@@ -39,7 +50,7 @@ public:
     void BindInt(int index, int64_t value) override {
         for (auto position : Positions(index)) {
             if (sqlite3_bind_int64(stmt_, static_cast<int>(position), value) != SQLITE_OK) {
-                throw DatabaseException("sqlite bind int failed: " + std::string(sqlite3_errmsg(db_)));
+                throw MakeSqliteError(db_, sqlite3_errcode(db_), "bind int failed");
             }
         }
     }
@@ -48,7 +59,7 @@ public:
         for (auto position : Positions(index)) {
             if (sqlite3_bind_text(stmt_, static_cast<int>(position), value.c_str(), -1, SQLITE_TRANSIENT)
                 != SQLITE_OK) {
-                throw DatabaseException("sqlite bind text failed: " + std::string(sqlite3_errmsg(db_)));
+                throw MakeSqliteError(db_, sqlite3_errcode(db_), "bind text failed");
             }
         }
     }
@@ -57,7 +68,7 @@ public:
         for (auto position : Positions(index)) {
             if (sqlite3_bind_blob(stmt_, static_cast<int>(position), data, static_cast<int>(length), SQLITE_TRANSIENT)
                 != SQLITE_OK) {
-                throw DatabaseException("sqlite bind blob failed: " + std::string(sqlite3_errmsg(db_)));
+                throw MakeSqliteError(db_, sqlite3_errcode(db_), "bind blob failed");
             }
         }
     }
@@ -70,7 +81,7 @@ public:
         if (result == SQLITE_DONE) {
             return StatementStepResult::Done;
         }
-        throw DatabaseException("sqlite step failed: " + std::string(sqlite3_errmsg(db_)));
+        throw MakeSqliteError(db_, result, "step failed");
     }
 
     int ColumnInt(int index) const override { return sqlite3_column_int(stmt_, index); }
@@ -89,7 +100,7 @@ public:
 private:
     const std::vector<unsigned int>& Positions(int index) const {
         if (index < 0 || static_cast<size_t>(index) >= normalizedSql_.positionsByLogicalIndex.size()) {
-            throw DatabaseException("sqlite invalid bind index");
+            throw DatabaseException("sqlite", SQLITE_MISUSE, "invalid bind index");
         }
         return normalizedSql_.positionsByLogicalIndex[static_cast<size_t>(index)];
     }
@@ -132,7 +143,7 @@ private:
         if (sqlite3_exec(db_, sql, nullptr, nullptr, &err) != SQLITE_OK) {
             std::string message = err ? err : "unknown sqlite error";
             sqlite3_free(err);
-            throw DatabaseException("sqlite transaction failed: " + message);
+            throw MakeSqliteError(SQLITE_ERROR, "transaction failed", message);
         }
     }
 
@@ -144,7 +155,7 @@ private:
 SqliteDatabaseConnection::SqliteDatabaseConnection(const std::string& path)
     : db_{nullptr} {
     if (sqlite3_open(path.c_str(), &db_) != SQLITE_OK) {
-        throw DatabaseException("Can't open sqlite database: " + std::string(sqlite3_errmsg(db_)));
+        throw MakeSqliteError(db_, sqlite3_errcode(db_), "open database failed");
     }
 }
 

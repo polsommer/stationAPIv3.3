@@ -16,7 +16,7 @@ void PersistentMessageService::StoreMessage(PersistentMessage& message) {
                  "folder, category, message, oob) VALUES (@avatar_id, @from_name, @from_address, "
                  "@subject, @sent_time, @status, @folder, @category, @message, @oob)";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
     int fromNameIdx = stmt->BindParameterIndex("@from_name");
@@ -55,9 +55,7 @@ void PersistentMessageService::StoreMessage(PersistentMessage& message) {
     stmt->BindBlob(oobIdx, reinterpret_cast<const uint8_t*>(message.oob.data()),
         message.oob.size() * sizeof(uint16_t));
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-}
+    stmt.ExpectDone();
 
     message.header.messageId = static_cast<uint32_t>(db_->GetLastInsertId());
 }
@@ -69,7 +67,7 @@ std::vector<PersistentHeader> PersistentMessageService::GetMessageHeaders(uint32
                  "folder, category, message, oob FROM persistent_message WHERE avatar_id = "
                  "@avatar_id AND status IN (1, 2, 3)";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
 
@@ -112,7 +110,7 @@ PersistentMessage PersistentMessageService::GetPersistentMessage(
                  "folder, category, message, oob FROM persistent_message WHERE id = @message_id "
                  "AND avatar_id = @avatar_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int messageIdIdx = stmt->BindParameterIndex("@message_id");
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
@@ -182,7 +180,7 @@ void PersistentMessageService::UpdateMessageStatus(
     char sql[] = "UPDATE persistent_message SET status = @status WHERE id = @message_id AND "
                  "avatar_id = @avatar_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int statusIdx = stmt->BindParameterIndex("@status");
     int messageIdIdx = stmt->BindParameterIndex("@message_id");
@@ -192,9 +190,7 @@ void PersistentMessageService::UpdateMessageStatus(
     stmt->BindInt(messageIdIdx, messageId);
     stmt->BindInt(avatarIdIdx, avatarId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 
 }
 
@@ -205,7 +201,7 @@ void PersistentMessageService::BulkUpdateMessageStatus(
     char sql[] = "UPDATE persistent_message SET status = @status WHERE avatar_id = @avatar_id AND "
              "category = @category";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int statusIdx = stmt->BindParameterIndex("@status");
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
@@ -216,7 +212,5 @@ void PersistentMessageService::BulkUpdateMessageStatus(
     std::string cat = FromWideString(category);
     stmt->BindText(categoryIdx, cat);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }

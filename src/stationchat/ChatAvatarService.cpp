@@ -88,7 +88,7 @@ void ChatAvatarService::PersistFriend(
         char sql[] = "INSERT INTO friend (avatar_id, friend_avatar_id, comment) VALUES (@avatar_id, "
                  "@friend_avatar_id, @comment)";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
     int friendAvatarIdIdx = stmt->BindParameterIndex("@friend_avatar_id");
@@ -100,16 +100,14 @@ void ChatAvatarService::PersistFriend(
     stmt->BindInt(friendAvatarIdIdx, destAvatarId);
     stmt->BindText(commentIdx, commentStr);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatAvatarService::PersistIgnore(uint32_t srcAvatarId, uint32_t destAvatarId) {
         char sql[] = "INSERT INTO ignore (avatar_id, ignore_avatar_id) VALUES (@avatar_id, "
                  "@ignore_avatar_id)";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
     int ignoreAvatarIdIdx = stmt->BindParameterIndex("@ignore_avatar_id");
@@ -117,9 +115,7 @@ void ChatAvatarService::PersistIgnore(uint32_t srcAvatarId, uint32_t destAvatarI
     stmt->BindInt(avatarIdIdx, srcAvatarId);
     stmt->BindInt(ignoreAvatarIdIdx, destAvatarId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatAvatarService::RemoveFriend(uint32_t srcAvatarId, uint32_t destAvatarId) {
@@ -127,7 +123,7 @@ void ChatAvatarService::RemoveFriend(uint32_t srcAvatarId, uint32_t destAvatarId
     char sql[] = "DELETE FROM friend WHERE avatar_id = @avatar_id AND friend_avatar_id = "
                  "@friend_avatar_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
     int friendAvatarIdIdx = stmt->BindParameterIndex("@friend_avatar_id");
@@ -135,9 +131,7 @@ void ChatAvatarService::RemoveFriend(uint32_t srcAvatarId, uint32_t destAvatarId
     stmt->BindInt(avatarIdIdx, srcAvatarId);
     stmt->BindInt(friendAvatarIdIdx, destAvatarId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatAvatarService::RemoveIgnore(uint32_t srcAvatarId, uint32_t destAvatarId) {
@@ -145,7 +139,7 @@ void ChatAvatarService::RemoveIgnore(uint32_t srcAvatarId, uint32_t destAvatarId
     char sql[] = "DELETE FROM ignore WHERE avatar_id = @avatar_id AND ignore_avatar_id = "
                  "@ignore_avatar_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
     int ignoreAvatarIdIdx = stmt->BindParameterIndex("@ignore_avatar_id");
@@ -153,9 +147,7 @@ void ChatAvatarService::RemoveIgnore(uint32_t srcAvatarId, uint32_t destAvatarId
     stmt->BindInt(avatarIdIdx, srcAvatarId);
     stmt->BindInt(ignoreAvatarIdIdx, destAvatarId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatAvatarService::UpdateFriendComment(
@@ -163,7 +155,7 @@ void ChatAvatarService::UpdateFriendComment(
         char sql[] = "UPDATE friend SET comment = @comment WHERE avatar_id = @avatar_id AND "
                  "friend_avatar_id = @friend_avatar_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int commentIdx = stmt->BindParameterIndex("@comment");
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
@@ -175,9 +167,7 @@ void ChatAvatarService::UpdateFriendComment(
     stmt->BindInt(avatarIdIdx, srcAvatarId);
     stmt->BindInt(friendAvatarIdIdx, destAvatarId);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 ChatAvatar* ChatAvatarService::GetCachedAvatar(
@@ -240,7 +230,7 @@ std::unique_ptr<ChatAvatar> ChatAvatarService::LoadStoredAvatar(
     char sql[] = "SELECT id, user_id, name, address, attributes FROM avatar WHERE name = @name AND "
                  "address = @address";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     std::string nameStr = FromWideString(name);
     std::string addressStr = FromWideString(address);
@@ -275,7 +265,7 @@ std::unique_ptr<ChatAvatar> ChatAvatarService::LoadStoredAvatar(uint32_t avatarI
     
     char sql[] = "SELECT id, user_id, name, address, attributes FROM avatar WHERE id = @avatar_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
 
@@ -305,7 +295,7 @@ void ChatAvatarService::InsertAvatar(ChatAvatar* avatar) {
     char sql[] = "INSERT INTO avatar (user_id, name, address, attributes) VALUES (@user_id, @name, "
                  "@address, @attributes)";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     std::string nameStr = FromWideString(avatar->name_);
     std::string addressStr = FromWideString(avatar->address_);
@@ -320,9 +310,7 @@ void ChatAvatarService::InsertAvatar(ChatAvatar* avatar) {
     stmt->BindText(addressIdx, addressStr);
     stmt->BindInt(attributesIdx, avatar->attributes_);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 
     avatar->avatarId_ = static_cast<uint32_t>(db_->GetLastInsertId());
 }
@@ -334,7 +322,7 @@ void ChatAvatarService::UpdateAvatar(const ChatAvatar* avatar) {
                  "attributes = @attributes "
                  "WHERE id = @avatar_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     std::string nameStr = FromWideString(avatar->name_);
     std::string addressStr = FromWideString(avatar->address_);
@@ -351,9 +339,7 @@ void ChatAvatarService::UpdateAvatar(const ChatAvatar* avatar) {
     stmt->BindInt(attributesIdx, avatar->attributes_);
     stmt->BindInt(avatarIdIdx, avatar->avatarId_);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatAvatarService::DeleteAvatar(ChatAvatar* avatar) {
@@ -361,22 +347,20 @@ void ChatAvatarService::DeleteAvatar(ChatAvatar* avatar) {
     
     char sql[] = "DELETE FROM avatar WHERE id = @avatar_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
 
     stmt->BindInt(avatarIdIdx, avatar->avatarId_);
 
-    if (stmt->Step() != StatementStepResult::Done) {
-        throw DatabaseException{"expected statement done"};
-    }
+    stmt.ExpectDone();
 }
 
 void ChatAvatarService::LoadFriendList(ChatAvatar* avatar) {
     
     char sql[] = "SELECT friend_avatar_id, comment FROM friend WHERE avatar_id = @avatar_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
 
@@ -398,7 +382,7 @@ void ChatAvatarService::LoadIgnoreList(ChatAvatar* avatar) {
     
     char sql[] = "SELECT ignore_avatar_id FROM ignore WHERE avatar_id = @avatar_id";
 
-    auto stmt = db_->Prepare(sql);
+    StatementHandle stmt{db_->Prepare(sql)};
 
     int avatarIdIdx = stmt->BindParameterIndex("@avatar_id");
 

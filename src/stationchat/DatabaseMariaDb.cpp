@@ -13,6 +13,13 @@
 
 namespace {
 
+
+DatabaseException MakeMariaDbError(MYSQL* handle, unsigned int code, const std::string& context) {
+    const char* rawMessage = handle ? mysql_error(handle) : nullptr;
+    std::string message = rawMessage ? rawMessage : "unknown mariadb error";
+    return DatabaseException("mariadb", static_cast<int>(code), context + ": " + message);
+}
+
 std::string EscapeString(MYSQL* handle, const std::string& input) {
     std::string out;
     out.resize(input.size() * 2 + 1);
@@ -50,7 +57,7 @@ public:
     int BindParameterIndex(const std::string& name) const override {
         auto iter = normalizedSql_.logicalIndexByName.find(name);
         if (iter == normalizedSql_.logicalIndexByName.end()) {
-            throw DatabaseException("mariadb missing parameter: " + name);
+            throw DatabaseException("mariadb", 0, "missing parameter: " + name);
         }
         return iter->second;
     }
@@ -146,7 +153,7 @@ private:
 
     void EnsureIndex(int index) {
         if (index < 0 || static_cast<size_t>(index) >= boundValues_.size()) {
-            throw DatabaseException("mariadb invalid bind index");
+            throw DatabaseException("mariadb", 0, "invalid bind index");
         }
     }
 
@@ -177,7 +184,7 @@ private:
         for (char c : normalizedSql_.sql) {
             if (c == '?') {
                 if (parameterIndex >= normalizedSql_.logicalIndexByPosition.size()) {
-                    throw DatabaseException("mariadb missing parameter value");
+                    throw DatabaseException("mariadb", 0, "missing parameter value");
                 }
                 int logicalIndex = normalizedSql_.logicalIndexByPosition[parameterIndex++];
                 sql += rendered[static_cast<size_t>(logicalIndex)];
@@ -187,12 +194,12 @@ private:
         }
 
         if (mysql_real_query(handle_, sql.c_str(), sql.size()) != 0) {
-            throw DatabaseException("mariadb query failed: " + std::string(mysql_error(handle_)));
+            throw MakeMariaDbError(handle_, mysql_errno(handle_), "query failed");
         }
 
         result_ = mysql_store_result(handle_);
         if (!result_ && mysql_field_count(handle_) != 0) {
-            throw DatabaseException("mariadb store result failed: " + std::string(mysql_error(handle_)));
+            throw MakeMariaDbError(handle_, mysql_errno(handle_), "store result failed");
         }
 
         if (result_) {
@@ -243,7 +250,7 @@ public:
 private:
     void Execute(const char* sql) {
         if (mysql_query(handle_, sql) != 0) {
-            throw DatabaseException("mariadb transaction failed: " + std::string(mysql_error(handle_)));
+            throw MakeMariaDbError(handle_, mysql_errno(handle_), "transaction failed");
         }
     }
 
@@ -262,7 +269,7 @@ MariaDbDatabaseConnection::MariaDbDatabaseConnection(const std::string& host, ui
     : impl_{std::make_unique<Impl>()} {
     impl_->handle = mysql_init(nullptr);
     if (!impl_->handle) {
-        throw DatabaseException("mariadb init failed");
+        throw DatabaseException("mariadb", 0, "init failed");
     }
 
     if (!mysql_real_connect(impl_->handle, host.c_str(), user.c_str(), password.c_str(),
@@ -270,17 +277,17 @@ MariaDbDatabaseConnection::MariaDbDatabaseConnection(const std::string& host, ui
         std::string error = mysql_error(impl_->handle);
         mysql_close(impl_->handle);
         impl_->handle = nullptr;
-        throw DatabaseException("mariadb connect failed: " + error);
+        throw DatabaseException("mariadb", 0, "connect failed: " + error);
     }
 
     if (mysql_set_character_set(impl_->handle, "utf8mb4") != 0) {
-        throw DatabaseException("mariadb set charset failed: " + std::string(mysql_error(impl_->handle)));
+        throw MakeMariaDbError(impl_->handle, mysql_errno(impl_->handle), "set charset failed");
     }
 
     if (mysql_query(impl_->handle,
             "SET SESSION sql_mode = CONCAT_WS(',', @@sql_mode, 'PIPES_AS_CONCAT')")
         != 0) {
-        throw DatabaseException("mariadb set sql_mode failed: " + std::string(mysql_error(impl_->handle)));
+        throw MakeMariaDbError(impl_->handle, mysql_errno(impl_->handle), "set sql_mode failed");
     }
 }
 
