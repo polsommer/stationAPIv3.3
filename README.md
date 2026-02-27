@@ -100,18 +100,18 @@ For upgrades, apply newer MariaDB migration files in version order.
 
 ## Running ##
 
-A default configuration is created when building the project. Configure the listen address/ports and ensure **database_engine = mariadb** in **build/bin/stationchat.cfg**. Then run the following commands from the project root:
+A default runtime folder is created when building the project at **build/chat**. Configure the listen address/ports and ensure **database_engine = mariadb** in **build/chat/etc/stationapi/swgchat.cfg**. Then run the following commands from the project root:
 
 ### Windows ###
 
-    cd build/bin
+    cd build/chat
     .\Debug\stationchat.exe
 
 ### Linux ###
 
-    cd build/bin
+    cd build/chat
     ./stationchat
 
 ## Final Notes ##
 
-It is recommended to copy the **build/bin** directory to another location after building to ensure the configuration files are not overwritten by future changes to the default versions of these files.
+It is recommended to copy the **build/chat** directory to another location after building to ensure the configuration files are not overwritten by future changes to the default versions of these files.

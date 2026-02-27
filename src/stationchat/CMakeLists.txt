@@ -96,15 +96,16 @@ endif()
 
 add_custom_command(TARGET stationchat POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory "${STATIONCHAT_CHAT_OUTPUT_DIR}"
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${STATIONCHAT_CHAT_OUTPUT_DIR}/etc/stationapi"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "$<TARGET_FILE:stationchat>"
           "${STATIONCHAT_CHAT_OUTPUT_DIR}/$<TARGET_FILE_NAME:stationchat>"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "${PROJECT_SOURCE_DIR}/extras/swgchat.cfg.dist"
-          "${STATIONCHAT_CHAT_OUTPUT_DIR}/swgchat.cfg"
+          "${STATIONCHAT_CHAT_OUTPUT_DIR}/etc/stationapi/swgchat.cfg"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "${PROJECT_SOURCE_DIR}/extras/logger.cfg.dist"
-          "${STATIONCHAT_CHAT_OUTPUT_DIR}/logger.cfg"
+          "${STATIONCHAT_CHAT_OUTPUT_DIR}/etc/stationapi/logger.cfg"
   COMMENT "Populating standalone chat runtime folder: ${STATIONCHAT_CHAT_OUTPUT_DIR}")
 
 install(TARGETS stationchat RUNTIME DESTINATION bin)
