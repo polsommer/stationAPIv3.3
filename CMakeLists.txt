@@ -11,6 +11,17 @@ cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
 project(stationapi VERSION 1.1)
 
+# Keep runtime artifacts in a predictable location so Ant/README commands that
+# expect build/bin/stationchat continue to work across single-config generators
+# (Unix Makefiles/Ninja) and multi-config generators (Visual Studio/Xcode).
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if (CMAKE_CONFIGURATION_TYPES)
+    foreach(OUTPUT_CONFIG ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER "${OUTPUT_CONFIG}" OUTPUT_CONFIG_UPPER)
+        set("CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUT_CONFIG_UPPER}" "${CMAKE_BINARY_DIR}/bin/${OUTPUT_CONFIG}")
+    endforeach()
+endif()
+
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(ModernCpp)
