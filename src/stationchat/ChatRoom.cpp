@@ -194,7 +194,7 @@ void ChatRoom::AddAdministrator(uint32_t srcAvatarId, ChatAvatar* administrator)
         administrators_.push_back(administrator);
 
         if (IsPersistent()) {
-            roomService_->PersistBanned(administrator->GetAvatarId(), roomId_);
+            roomService_->PersistAdministrator(administrator->GetAvatarId(), roomId_);
         }
     }
 }
@@ -211,7 +211,7 @@ void ChatRoom::AddModerator(uint32_t srcAvatarId, ChatAvatar* moderator) {
     moderators_.push_back(moderator);
 
     if (IsPersistent()) {
-        roomService_->PersistBanned(moderator->GetAvatarId(), roomId_);
+        roomService_->PersistModerator(moderator->GetAvatarId(), roomId_);
     }
 }
 
