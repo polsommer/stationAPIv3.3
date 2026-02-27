@@ -104,8 +104,8 @@ void ChatAvatarService::PersistFriend(
 }
 
 void ChatAvatarService::PersistIgnore(uint32_t srcAvatarId, uint32_t destAvatarId) {
-        char sql[] = "INSERT INTO ignore (avatar_id, ignore_avatar_id) VALUES (@avatar_id, "
-                 "@ignore_avatar_id)";
+        auto sql = "INSERT INTO " + IgnoreTableIdentifier(*db_)
+        + " (avatar_id, ignore_avatar_id) VALUES (@avatar_id, @ignore_avatar_id)";
 
     StatementHandle stmt{db_->Prepare(sql)};
 
@@ -136,8 +136,8 @@ void ChatAvatarService::RemoveFriend(uint32_t srcAvatarId, uint32_t destAvatarId
 
 void ChatAvatarService::RemoveIgnore(uint32_t srcAvatarId, uint32_t destAvatarId) {
     
-    char sql[] = "DELETE FROM ignore WHERE avatar_id = @avatar_id AND ignore_avatar_id = "
-                 "@ignore_avatar_id";
+    auto sql = "DELETE FROM " + IgnoreTableIdentifier(*db_)
+        + " WHERE avatar_id = @avatar_id AND ignore_avatar_id = @ignore_avatar_id";
 
     StatementHandle stmt{db_->Prepare(sql)};
 
@@ -380,7 +380,8 @@ void ChatAvatarService::LoadFriendList(ChatAvatar* avatar) {
 
 void ChatAvatarService::LoadIgnoreList(ChatAvatar* avatar) {
     
-    char sql[] = "SELECT ignore_avatar_id FROM ignore WHERE avatar_id = @avatar_id";
+    auto sql = "SELECT ignore_avatar_id FROM " + IgnoreTableIdentifier(*db_)
+        + " WHERE avatar_id = @avatar_id";
 
     StatementHandle stmt{db_->Prepare(sql)};
 

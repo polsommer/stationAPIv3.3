@@ -89,6 +89,18 @@ public:
     virtual const DatabaseCapabilities& Capabilities() const = 0;
 };
 
+inline std::string IgnoreTableIdentifierForBackend(const std::string& backendName) {
+    if (backendName == "mariadb") {
+        return "`ignore`";
+    }
+
+    return "ignore";
+}
+
+inline std::string IgnoreTableIdentifier(const IDatabaseConnection& db) {
+    return IgnoreTableIdentifierForBackend(db.BackendName());
+}
+
 class StatementHandle {
 public:
     explicit StatementHandle(std::unique_ptr<IStatement> statement)
