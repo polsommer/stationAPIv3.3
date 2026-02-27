@@ -81,28 +81,62 @@ A default configuration and database is created when building the project. Confi
 It is recommended to copy the **build/bin** directory to another location after building to ensure the configuration files are not overwritten by future changes to the default versions of these files.
 
 
-## Operational Playbook: SQLite -> MariaDB (Minimal Downtime) ##
+## SQLite -> MariaDB Migration Utility (Offline Cutover) ##
 
-1. **Prepare MariaDB schema ahead of cutover**
-   * Create target database/schema and credentials.
-   * Apply baseline migration: `extras/migrations/mariadb/V001__baseline.sql`.
+Use `extras/sqlite_to_mariadb_migrator.py` to copy data from `stationchat.db` (SQLite) into a MariaDB schema initialized with `extras/migrations/mariadb/V001__baseline.sql`.
 
-2. **Warm copy data from SQLite while chat is still online**
-   * Export SQLite data using `.mode insert` or equivalent tooling.
-   * Transform/import into MariaDB tables (`avatar`, `room`, `room_*`, `persistent_message`, `friend`, `ignore`).
-   * Keep `schema_version` at `version=1`.
+### What it migrates ###
 
-3. **Short write-freeze cutover window**
-   * Stop stationchat briefly (or block new writes at the ingress layer).
-   * Export and apply only final delta changes from SQLite to MariaDB.
+The tool migrates in foreign-key-safe order and preserves protocol-visible primary keys:
 
-4. **Switch configuration and restart**
-   * Set `database_engine = mariadb`.
-   * Set `database_host`, `database_port`, `database_user`, `database_password`, `database_schema`.
-   * Start stationchat and verify startup logs report MariaDB backend and matching schema version.
+1. `avatar`
+2. `room`
+3. `room_administrator`
+4. `room_moderator`
+5. `room_ban`
+6. `room_invite`
+7. `persistent_message`
+8. `friend`
+9. `ignore`
+10. `schema_version`
 
-5. **Post-cutover validation**
-   * Validate login/chat room discovery/persistent mail workflows.
-   * Keep original SQLite file as rollback artifact until confidence window expires.
+For each table, it records source/target row counts and SHA-256 checksums in a JSON migration report.
 
-This approach minimizes downtime to the final delta sync and restart interval.
+### Prerequisites ###
+
+1. Apply MariaDB baseline schema first:
+
+       mariadb -u <user> -p <schema> < extras/migrations/mariadb/V001__baseline.sql
+
+2. Install Python dependency used for MariaDB connectivity:
+
+       pip install pymysql
+
+### Dry run (no writes) ###
+
+A dry run reads SQLite only and emits a report with source counts/checksums:
+
+    python3 extras/sqlite_to_mariadb_migrator.py \
+      --sqlite-path /path/to/stationchat.db \
+      --dry-run \
+      --report-path /tmp/stationchat-migration-dryrun.json
+
+### Cutover run ###
+
+Run against an empty baseline schema (default safety check). Use `--truncate-target` only when intentionally re-running against an existing target:
+
+    python3 extras/sqlite_to_mariadb_migrator.py \
+      --sqlite-path /path/to/stationchat.db \
+      --mariadb-host 127.0.0.1 \
+      --mariadb-port 3306 \
+      --mariadb-user stationchat \
+      --mariadb-password '***' \
+      --mariadb-schema stationchat \
+      --report-path /tmp/stationchat-migration.json
+
+### Rollback notes ###
+
+* The utility is operational/offline only; it does not change runtime chat protocol behavior.
+* Keep the original SQLite database file unchanged until MariaDB validation is complete.
+* If verification fails, the MariaDB transaction is rolled back and the report includes the error.
+* To revert a completed cutover, point `swgchat.cfg` back to SQLite settings and restart stationchat.
