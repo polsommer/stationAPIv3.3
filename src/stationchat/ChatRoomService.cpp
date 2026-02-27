@@ -9,16 +9,8 @@
 namespace {
 std::string BuildInsertIgnoreSql(const IDatabaseConnection* db, const std::string& tableName,
     const std::string& columns, const std::string& values) {
-    switch (db->Capabilities().upsertStrategy) {
-    case UpsertStrategy::InsertIgnore:
-        return "INSERT IGNORE INTO " + tableName + " (" + columns + ") VALUES (" + values + ")";
-    case UpsertStrategy::InsertOrIgnore:
-        return "INSERT OR IGNORE INTO " + tableName + " (" + columns + ") VALUES (" + values + ")";
-    case UpsertStrategy::InsertOnConflictDoNothing:
-        return "INSERT INTO " + tableName + " (" + columns + ") VALUES (" + values + ") ON CONFLICT DO NOTHING";
-    }
-
-    return "INSERT INTO " + tableName + " (" + columns + ") VALUES (" + values + ")";
+    (void)db;
+    return "INSERT IGNORE INTO " + tableName + " (" + columns + ") VALUES (" + values + ")";
 }
 } // namespace
 

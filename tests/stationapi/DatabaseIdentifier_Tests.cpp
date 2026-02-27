@@ -23,15 +23,13 @@ private:
 
 } // namespace
 
-SCENARIO("ignore table identifier is backend-safe", "[database]") {
-    REQUIRE(IgnoreTableIdentifierForBackend("sqlite") == "ignore");
+SCENARIO("ignore table identifier uses MariaDB-safe quoting", "[database]") {
     REQUIRE(IgnoreTableIdentifierForBackend("mariadb") == "`ignore`");
+    REQUIRE(IgnoreTableIdentifierForBackend("unexpected") == "`ignore`");
 }
 
 SCENARIO("ignore table identifier can be resolved from a database connection", "[database]") {
-    BackendOnlyConnection sqliteDb{"sqlite"};
     BackendOnlyConnection mariaDb{"mariadb"};
 
-    REQUIRE(IgnoreTableIdentifier(sqliteDb) == "ignore");
     REQUIRE(IgnoreTableIdentifier(mariaDb) == "`ignore`");
 }

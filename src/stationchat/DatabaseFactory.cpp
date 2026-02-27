@@ -14,40 +14,13 @@
 namespace {
 std::string DescribeCapabilities(const DatabaseCapabilities& capabilities) {
     std::ostringstream out;
-
-    out << "upsert=";
-    switch (capabilities.upsertStrategy) {
-    case UpsertStrategy::InsertIgnore:
-        out << "INSERT IGNORE";
-        break;
-    case UpsertStrategy::InsertOrIgnore:
-        out << "INSERT OR IGNORE";
-        break;
-    case UpsertStrategy::InsertOnConflictDoNothing:
-        out << "ON CONFLICT DO NOTHING";
-        break;
-    }
-
-    out << ", blob=";
-    switch (capabilities.blobSemantics) {
-    case BlobSemantics::NativeBlob:
-        out << "native";
-        break;
-    case BlobSemantics::HexEncodedLiteral:
-        out << "hex-literal";
-        break;
-    }
-
-    out << ", tx_isolation=";
-    switch (capabilities.transactionIsolationSupport) {
-    case TransactionIsolationSupport::SerializableOnly:
-        out << "serializable-only";
-        break;
-    case TransactionIsolationSupport::ReadCommitted:
-        out << "read-committed";
-        break;
-    }
-
+    out << "upsert=INSERT IGNORE";
+    out << ", blob="
+        << (capabilities.blobSemantics == BlobSemantics::HexEncodedLiteral ? "hex-literal" : "native");
+    out << ", tx_isolation="
+        << (capabilities.transactionIsolationSupport == TransactionIsolationSupport::ReadCommitted
+                ? "read-committed"
+                : "serializable-only");
     return out.str();
 }
 

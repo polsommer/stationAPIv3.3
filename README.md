@@ -18,8 +18,7 @@ Uses the SOE libraries to implement chat features in a standalone utility. Ideal
 
 * c++14 compatible compiler
 * boost::program_options
-* sqlite3
-* MariaDB Connector/C (optional, required for MariaDB runtime provider)
+* MariaDB Connector/C
 * udplibrary - bundled in the Star Wars Galaxies official source
 
 ## Building ##
@@ -32,21 +31,12 @@ Copy the udplibrary directory from the Star Wars Galaxies offical source to the 
 
 ## Database Initialization ##
 
-By default, a clean database instance is provided and placed with the default configuration files in the **build/bin** directory; therefore, nothing needs to be done for new installations, the db is already created and placed in the appropriate location.
-
-To create a new, clean database instance, use the following commands:
-
-    sqlite3 chat.db
-    sqlite> .read /path/to/extras/init_database.sql
-
-Then update the **database_path** config option with the full path to the database.
-
-For MariaDB deployments, set **database_engine = mariadb** and fill in **database_host**, **database_port**, **database_user**, **database_password**, and **database_schema** in `swgchat.cfg`.
+stationchat uses MariaDB for runtime storage. Set **database_engine = mariadb** and fill in **database_host**, **database_port**, **database_user**, **database_password**, and **database_schema** in `swgchat.cfg`.
 
 
 ## Schema Versioning and Migrations ##
 
-stationchat now validates schema compatibility during startup for both SQLite and MariaDB:
+stationchat validates MariaDB schema compatibility during startup:
 
 * selected backend is logged
 * backend capabilities are logged (upsert strategy, blob handling, transaction isolation)
@@ -55,12 +45,9 @@ stationchat now validates schema compatibility during startup for both SQLite an
 
 If the schema is incompatible, stationchat exits immediately with an actionable error.
 
-Migration scripts are versioned and ordered in:
+Migration scripts are versioned and ordered in `extras/migrations/mariadb/`.
 
-* `extras/migrations/sqlite/`
-* `extras/migrations/mariadb/`
-
-For a clean install, apply the baseline migration `V001__baseline.sql` for your backend.
+For a clean install, apply the baseline migration `V001__baseline.sql` for MariaDB.
 
 ## Running ##
 
@@ -79,64 +66,3 @@ A default configuration and database is created when building the project. Confi
 ## Final Notes ##
 
 It is recommended to copy the **build/bin** directory to another location after building to ensure the configuration files are not overwritten by future changes to the default versions of these files.
-
-
-## SQLite -> MariaDB Migration Utility (Offline Cutover) ##
-
-Use `extras/sqlite_to_mariadb_migrator.py` to copy data from `stationchat.db` (SQLite) into a MariaDB schema initialized with `extras/migrations/mariadb/V001__baseline.sql`.
-
-### What it migrates ###
-
-The tool migrates in foreign-key-safe order and preserves protocol-visible primary keys:
-
-1. `avatar`
-2. `room`
-3. `room_administrator`
-4. `room_moderator`
-5. `room_ban`
-6. `room_invite`
-7. `persistent_message`
-8. `friend`
-9. `ignore`
-10. `schema_version`
-
-For each table, it records source/target row counts and SHA-256 checksums in a JSON migration report.
-
-### Prerequisites ###
-
-1. Apply MariaDB baseline schema first:
-
-       mariadb -u <user> -p <schema> < extras/migrations/mariadb/V001__baseline.sql
-
-2. Install Python dependency used for MariaDB connectivity:
-
-       pip install pymysql
-
-### Dry run (no writes) ###
-
-A dry run reads SQLite only and emits a report with source counts/checksums:
-
-    python3 extras/sqlite_to_mariadb_migrator.py \
-      --sqlite-path /path/to/stationchat.db \
-      --dry-run \
-      --report-path /tmp/stationchat-migration-dryrun.json
-
-### Cutover run ###
-
-Run against an empty baseline schema (default safety check). Use `--truncate-target` only when intentionally re-running against an existing target:
-
-    python3 extras/sqlite_to_mariadb_migrator.py \
-      --sqlite-path /path/to/stationchat.db \
-      --mariadb-host 127.0.0.1 \
-      --mariadb-port 3306 \
-      --mariadb-user stationchat \
-      --mariadb-password '***' \
-      --mariadb-schema stationchat \
-      --report-path /tmp/stationchat-migration.json
-
-### Rollback notes ###
-
-* The utility is operational/offline only; it does not change runtime chat protocol behavior.
-* Keep the original SQLite database file unchanged until MariaDB validation is complete.
-* If verification fails, the MariaDB transaction is rolled back and the report includes the error.
-* To revert a completed cutover, point `swgchat.cfg` back to SQLite settings and restart stationchat.
