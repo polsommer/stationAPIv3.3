@@ -245,7 +245,7 @@ void ChatRoomService::LoadModerators(ChatRoom * room) {
 }
 
 void ChatRoomService::PersistModerator(uint32_t moderatorId, uint32_t roomId) {
-        char sql[] = "INSERT OR IGNORE INTO room_moderator (moderator_avatar_id, room_id) VALUES (@moderator_avatar_id, @room_id)";
+        char sql[] = "INSERT IGNORE INTO room_moderator (moderator_avatar_id, room_id) VALUES (@moderator_avatar_id, @room_id)";
 
     auto stmt = db_->Prepare(sql);
 
@@ -291,7 +291,7 @@ void ChatRoomService::LoadAdministrators(ChatRoom * room) {
 }
 
 void ChatRoomService::PersistAdministrator(uint32_t administratorId, uint32_t roomId) {
-        char sql[] = "INSERT OR IGNORE INTO room_administrator (administrator_avatar_id, room_id) VALUES (@administrator_avatar_id, @room_id)";
+        char sql[] = "INSERT IGNORE INTO room_administrator (administrator_avatar_id, room_id) VALUES (@administrator_avatar_id, @room_id)";
 
     auto stmt = db_->Prepare(sql);
 
@@ -337,11 +337,11 @@ void ChatRoomService::LoadBanned(ChatRoom * room) {
 }
 
 void ChatRoomService::PersistBanned(uint32_t bannedId, uint32_t roomId) {
-        char sql[] = "INSERT OR IGNORE INTO room_ban (banned_avatar_id, room_id) VALUES (@banned_avatar_id, @room_id)";
+        char sql[] = "INSERT IGNORE INTO room_ban (banned_avatar_id, room_id) VALUES (@banned_avatar_id, @room_id)";
 
     auto stmt = db_->Prepare(sql);
 
-    int bannedAvatarIdIdx = stmt->BindParameterIndex("@moderator_avatar_id");
+    int bannedAvatarIdIdx = stmt->BindParameterIndex("@banned_avatar_id");
     int roomIdIdx = stmt->BindParameterIndex("@room_id");
 
     stmt->BindInt(bannedAvatarIdIdx, bannedId);

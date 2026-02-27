@@ -106,7 +106,7 @@ void ChatAvatarService::PersistFriend(
 }
 
 void ChatAvatarService::PersistIgnore(uint32_t srcAvatarId, uint32_t destAvatarId) {
-        char sql[] = "INSERT INTO ignore (avatar_id, ignore_avatar_id, comment) VALUES (@avatar_id, "
+        char sql[] = "INSERT INTO ignore (avatar_id, ignore_avatar_id) VALUES (@avatar_id, "
                  "@ignore_avatar_id)";
 
     auto stmt = db_->Prepare(sql);
@@ -160,7 +160,7 @@ void ChatAvatarService::RemoveIgnore(uint32_t srcAvatarId, uint32_t destAvatarId
 
 void ChatAvatarService::UpdateFriendComment(
     uint32_t srcAvatarId, uint32_t destAvatarId, const std::u16string& comment) {
-        char sql[] = "UDPATE friend SET comment = @comment WHERE avatar_id = @avatar_id AND "
+        char sql[] = "UPDATE friend SET comment = @comment WHERE avatar_id = @avatar_id AND "
                  "friend_avatar_id = @friend_avatar_id";
 
     auto stmt = db_->Prepare(sql);
@@ -325,6 +325,7 @@ void ChatAvatarService::InsertAvatar(ChatAvatar* avatar) {
     }
 
     avatar->avatarId_ = static_cast<uint32_t>(db_->GetLastInsertId());
+}
 
 void ChatAvatarService::UpdateAvatar(const ChatAvatar* avatar) {
     CHECK_NOTNULL(avatar);
