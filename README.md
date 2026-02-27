@@ -23,11 +23,32 @@ Uses the SOE libraries to implement chat features in a standalone utility. Ideal
 
 ## Building ##
 
-Copy the udplibrary directory from the Star Wars Galaxies offical source to the top level swgchat directory, install the remaining dependencies via a package manager, then run the following:
+Copy the udplibrary directory from the Star Wars Galaxies offical source to the top level swgchat directory, install the remaining dependencies via a package manager, then use either CMake directly or the Ant wrapper.
+
+### Option 1: CMake (manual) ###
 
     mkdir build; cd build
     cmake ..
     cmake --build .
+
+### Option 2: Apache Ant (recommended for Linux command workflows) ###
+
+From the project root:
+
+    ant configure
+    ant compile_chat
+
+Useful Ant targets:
+
+* `ant compile_chat` - configure then build only the `stationchat` target
+* `ant test` - configure/build then run `ctest`
+* `ant run` - configure/build then start `stationchat`
+* `ant clean` - remove the build directory
+
+You can also pick a build type or generator:
+
+    ant -Dbuild.type=Debug build
+    ant -Dcmake.generator=Ninja build
 
 ## Database Initialization ##
 
