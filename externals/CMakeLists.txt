@@ -1,4 +1,7 @@
-
 if (HAVE_UDPLIBRARY)
-    add_subdirectory(udplibrary)
+    if (EXISTS "${PROJECT_SOURCE_DIR}/externals/udplibrary/CMakeLists.txt")
+        add_subdirectory(udplibrary)
+    else()
+        add_subdirectory("${UDPLIBRARY_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/udplibrary")
+    endif()
 endif()
