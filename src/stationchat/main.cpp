@@ -7,6 +7,7 @@
 #include <boost/program_options.hpp>
 
 #include <chrono>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -93,9 +94,19 @@ StationChatConfig BuildConfiguration(int argc, const char* argv[]) {
         ("database_user", po::value<std::string>(&config.databaseUser)->default_value(""),
             "database user (required when database_engine=mariadb)")
         ("database_password", po::value<std::string>(&config.databasePassword)->default_value(""),
-            "database password (used when database_engine=mariadb)")
+            "database password (used when database_engine=mariadb; can be overridden by STATIONCHAT_DB_PASSWORD)")
         ("database_schema", po::value<std::string>(&config.databaseSchema)->default_value(""),
             "database schema (required when database_engine=mariadb)")
+        ("database_ssl_mode", po::value<std::string>(&config.databaseSslMode)->default_value(""),
+            "database TLS mode: disabled|preferred|required|verify_ca|verify_identity (optional)")
+        ("database_ssl_ca", po::value<std::string>(&config.databaseSslCa)->default_value(""),
+            "path to database TLS CA file (optional)")
+        ("database_ssl_capath", po::value<std::string>(&config.databaseSslCaPath)->default_value(""),
+            "path to database TLS CA directory (optional)")
+        ("database_ssl_cert", po::value<std::string>(&config.databaseSslCert)->default_value(""),
+            "path to database TLS client certificate (optional)")
+        ("database_ssl_key", po::value<std::string>(&config.databaseSslKey)->default_value(""),
+            "path to database TLS client key (optional)")
         ;
 
     po::options_description cmdline_options;
@@ -122,6 +133,11 @@ StationChatConfig BuildConfiguration(int argc, const char* argv[]) {
 
     po::store(po::parse_config_file(ifs, config_file_options), vm);
     po::notify(vm);
+
+    const char* passwordFromEnv = std::getenv("STATIONCHAT_DB_PASSWORD");
+    if (passwordFromEnv != nullptr) {
+        config.databasePassword = passwordFromEnv;
+    }
 
     if (vm.count("help")) {
         std::cout << cmdline_options << "\n";

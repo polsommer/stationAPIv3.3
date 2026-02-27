@@ -5,7 +5,9 @@
 class MariaDbDatabaseConnection final : public IDatabaseConnection {
 public:
     MariaDbDatabaseConnection(const std::string& host, uint16_t port, const std::string& user,
-        const std::string& password, const std::string& schema);
+        const std::string& password, const std::string& schema, const std::string& sslMode,
+        const std::string& sslCa, const std::string& sslCaPath, const std::string& sslCert,
+        const std::string& sslKey);
     ~MariaDbDatabaseConnection() override;
 
     std::unique_ptr<IStatement> Prepare(const std::string& sql) override;

@@ -18,6 +18,11 @@ struct StationChatConfig {
     std::string databaseUser;
     std::string databasePassword;
     std::string databaseSchema;
+    std::string databaseSslMode;
+    std::string databaseSslCa;
+    std::string databaseSslCaPath;
+    std::string databaseSslCert;
+    std::string databaseSslKey;
 
     std::string loggerConfig;
     bool bindToIp;

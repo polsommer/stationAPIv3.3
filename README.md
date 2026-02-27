@@ -78,8 +78,9 @@ You can also pick a build type or generator:
 stationchat uses MariaDB for all runtime storage.
 
 1. Create a MariaDB schema for stationchat.
-2. Set **database_engine = mariadb** and fill in **database_host**, **database_port**, **database_user**, **database_password**, and **database_schema** in `swgchat.cfg`.
-3. Apply the baseline migration:
+2. Set **database_engine = mariadb** and fill in **database_host**, **database_port**, **database_user**, and **database_schema** in `swgchat.cfg`. Configure **database_password** in the config file or set **STATIONCHAT_DB_PASSWORD** (environment variable takes precedence).
+3. (Optional) Configure MariaDB TLS using **database_ssl_mode** (`disabled`, `preferred`, `required`, `verify_ca`, `verify_identity`) and certificate paths (**database_ssl_ca**, **database_ssl_capath**, **database_ssl_cert**, **database_ssl_key**) as needed. Leave them empty to preserve current connection behavior.
+4. Apply the baseline migration:
 
        mysql -h <host> -P <port> -u <user> -p <schema> < extras/migrations/mariadb/V001__baseline.sql
 
