@@ -23,7 +23,7 @@ DatabaseException MakeMariaDbError(MYSQL* handle, unsigned int code, const std::
 std::string EscapeString(MYSQL* handle, const std::string& input) {
     std::string out;
     out.resize(input.size() * 2 + 1);
-    auto written = mysql_real_escape_string(handle, out.data(), input.c_str(), input.size());
+    auto written = mysql_real_escape_string(handle, &out[0], input.c_str(), input.size());
     out.resize(written);
     return out;
 }
