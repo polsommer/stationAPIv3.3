@@ -1,5 +1,4 @@
-add_executable(
-  stationchat
+set(STATIONCHAT_SOURCES
   protocol/AddBan.hpp
   protocol/AddFriend.hpp
   protocol/AddIgnore.hpp
@@ -46,10 +45,6 @@ add_executable(
   DatabaseFactory.hpp
   DatabaseBootstrap.cpp
   DatabaseBootstrap.hpp
-  DatabaseMariaDb.cpp
-  DatabaseMariaDb.hpp
-  DatabaseSqlite.cpp
-  DatabaseSqlite.hpp
   SqlParameterAdapter.cpp
   SqlParameterAdapter.hpp
   ChatRoom.cpp
@@ -72,15 +67,35 @@ add_executable(
   StationChatApp.cpp
   StationChatApp.hpp
   StationChatConfig.hpp)
-  
-# cmake-format: off
+
+if (STATIONCHAT_WITH_MARIADB)
+  list(APPEND STATIONCHAT_SOURCES
+    DatabaseMariaDb.cpp
+    DatabaseMariaDb.hpp)
+endif()
+
+if (STATIONCHAT_WITH_SQLITE)
+  list(APPEND STATIONCHAT_SOURCES
+    DatabaseSqlite.cpp
+    DatabaseSqlite.hpp)
+endif()
+
+add_executable(stationchat ${STATIONCHAT_SOURCES})
+
 target_link_libraries(stationchat
     stationapi
     ${Boost_LIBRARIES}
-    ${SQLite3_LIBRARY}
-    mysqlclient
     $<$<PLATFORM_ID:Windows>:ws2_32>)
-# cmake-format: on
+
+if (STATIONCHAT_WITH_SQLITE)
+  target_link_libraries(stationchat PRIVATE ${SQLite3_LIBRARY})
+  target_compile_definitions(stationchat PRIVATE STATIONCHAT_WITH_SQLITE=1)
+endif()
+
+if (STATIONCHAT_WITH_MARIADB)
+  target_link_libraries(stationchat PRIVATE MariaDB::Client)
+  target_compile_definitions(stationchat PRIVATE STATIONCHAT_WITH_MARIADB=1)
+endif()
 
 target_include_directories(stationchat PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

@@ -1,8 +1,12 @@
 #include "DatabaseFactory.hpp"
 
 #include "DatabaseBootstrap.hpp"
+#if defined(STATIONCHAT_WITH_MARIADB)
 #include "DatabaseMariaDb.hpp"
+#endif
+#if defined(STATIONCHAT_WITH_SQLITE)
 #include "DatabaseSqlite.hpp"
+#endif
 #include "StationChatConfig.hpp"
 
 #include "easylogging++.h"
@@ -78,14 +82,24 @@ std::unique_ptr<IDatabaseConnection> CreateDatabaseConnection(const StationChatC
     std::unique_ptr<IDatabaseConnection> connection;
 
     if (config.databaseEngine == "mariadb") {
+#if defined(STATIONCHAT_WITH_MARIADB)
         connection = std::make_unique<MariaDbDatabaseConnection>(
             config.databaseHost,
             config.databasePort,
             config.databaseUser,
             config.databasePassword,
             config.databaseSchema);
+#else
+        throw DatabaseException("database", 0,
+            "unsupported database_engine 'mariadb'; this binary was built without MariaDB support");
+#endif
     } else if (config.databaseEngine == "sqlite") {
+#if defined(STATIONCHAT_WITH_SQLITE)
         connection = std::make_unique<SqliteDatabaseConnection>(config.chatDatabasePath);
+#else
+        throw DatabaseException("database", 0,
+            "unsupported database_engine 'sqlite'; this binary was built without SQLite support");
+#endif
     } else {
         throw DatabaseException("database", 0,
             "unsupported database_engine '" + config.databaseEngine + "'; expected sqlite or mariadb");
