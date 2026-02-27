@@ -56,7 +56,7 @@ private:
             LOG(ERROR) << "ChatAPI Result Exception: [" << ToString(e.code) << "] " << e.message;
         } catch (const DatabaseException& e) {
             response.result = ChatResultCode::DATABASE;
-            LOG(ERROR) << "Database Error: [" << e.code << "] " << e.what();
+            LOG(ERROR) << "Database Error: [" << e.Backend() << ":" << e.Code() << "] " << e.what();
         }
 
         Send(response);
