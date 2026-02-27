@@ -52,7 +52,8 @@ void PersistentMessageService::StoreMessage(PersistentMessage& message) {
     std::string msg = FromWideString(message.message);
     stmt->BindText(messageIdx, msg);
 
-    stmt->BindBlob(oobIdx, reinterpret_cast<const uint8_t*>(message.oob.data()), message.oob.size() * 2);
+    stmt->BindBlob(oobIdx, reinterpret_cast<const uint8_t*>(message.oob.data()),
+        message.oob.size() * sizeof(uint16_t));
 
     if (stmt->Step() != StatementStepResult::Done) {
         throw DatabaseException{"expected statement done"};
@@ -153,9 +154,17 @@ PersistentMessage PersistentMessageService::GetPersistentMessage(
     int size = stmt->ColumnBytes(10);
     const uint8_t* data = stmt->ColumnBlob(10);
 
-    message.oob.resize(size / 2);
-    for (int i = 0; i < size/2; ++i) {
-        message.oob[i] = *reinterpret_cast<const uint16_t*>(data + i*2);
+    if (size % static_cast<int>(sizeof(uint16_t)) != 0) {
+        throw DatabaseException{"persistent_message.oob blob has invalid UTF-16 byte length"};
+    }
+
+    const int codeUnitCount = size / static_cast<int>(sizeof(uint16_t));
+    message.oob.resize(codeUnitCount);
+    for (int i = 0; i < codeUnitCount; ++i) {
+        uint16_t value = 0;
+        value = static_cast<uint16_t>(data[i * 2])
+            | static_cast<uint16_t>(static_cast<uint16_t>(data[i * 2 + 1]) << 8);
+        message.oob[i] = value;
     }
 
     

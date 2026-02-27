@@ -48,6 +48,8 @@ add_executable(
   DatabaseMariaDb.hpp
   DatabaseSqlite.cpp
   DatabaseSqlite.hpp
+  SqlParameterAdapter.cpp
+  SqlParameterAdapter.hpp
   ChatRoom.cpp
   ChatRoom.hpp
   ChatRoomService.cpp
@@ -74,6 +76,7 @@ target_link_libraries(stationchat
     stationapi
     ${Boost_LIBRARIES}
     ${SQLite3_LIBRARY}
+    mysqlclient
     $<$<PLATFORM_ID:Windows>:ws2_32>)
 # cmake-format: on
 

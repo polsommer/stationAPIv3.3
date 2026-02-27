@@ -1,5 +1,7 @@
 #include "DatabaseSqlite.hpp"
 
+#include "SqlParameterAdapter.hpp"
+
 #include <sqlite3.h>
 
 namespace {
@@ -8,7 +10,16 @@ public:
     SqliteStatement(sqlite3* db, const std::string& sql)
         : db_{db}
         , stmt_{nullptr} {
-        auto result = sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt_, nullptr);
+        std::string sqlForSqlite = sql;
+        const std::string insertIgnore = "INSERT IGNORE INTO";
+        const auto insertIgnorePos = sqlForSqlite.find(insertIgnore);
+        if (insertIgnorePos != std::string::npos) {
+            sqlForSqlite.replace(insertIgnorePos, insertIgnore.size(), "INSERT OR IGNORE INTO");
+        }
+
+        normalizedSql_ = NormalizeNamedParameters(sqlForSqlite);
+
+        auto result = sqlite3_prepare_v2(db_, normalizedSql_.sql.c_str(), -1, &stmt_, nullptr);
         if (result != SQLITE_OK) {
             throw DatabaseException("sqlite prepare failed: " + std::string(sqlite3_errmsg(db_)));
         }
@@ -17,24 +28,37 @@ public:
     ~SqliteStatement() override { sqlite3_finalize(stmt_); }
 
     int BindParameterIndex(const std::string& name) const override {
-        return sqlite3_bind_parameter_index(stmt_, name.c_str());
+        auto iter = normalizedSql_.logicalIndexByName.find(name);
+        if (iter == normalizedSql_.logicalIndexByName.end()) {
+            throw DatabaseException("sqlite missing parameter: " + name);
+        }
+
+        return iter->second;
     }
 
     void BindInt(int index, int64_t value) override {
-        if (sqlite3_bind_int64(stmt_, index, value) != SQLITE_OK) {
-            throw DatabaseException("sqlite bind int failed: " + std::string(sqlite3_errmsg(db_)));
+        for (auto position : Positions(index)) {
+            if (sqlite3_bind_int64(stmt_, static_cast<int>(position), value) != SQLITE_OK) {
+                throw DatabaseException("sqlite bind int failed: " + std::string(sqlite3_errmsg(db_)));
+            }
         }
     }
 
     void BindText(int index, const std::string& value) override {
-        if (sqlite3_bind_text(stmt_, index, value.c_str(), -1, SQLITE_TRANSIENT) != SQLITE_OK) {
-            throw DatabaseException("sqlite bind text failed: " + std::string(sqlite3_errmsg(db_)));
+        for (auto position : Positions(index)) {
+            if (sqlite3_bind_text(stmt_, static_cast<int>(position), value.c_str(), -1, SQLITE_TRANSIENT)
+                != SQLITE_OK) {
+                throw DatabaseException("sqlite bind text failed: " + std::string(sqlite3_errmsg(db_)));
+            }
         }
     }
 
     void BindBlob(int index, const uint8_t* data, size_t length) override {
-        if (sqlite3_bind_blob(stmt_, index, data, static_cast<int>(length), SQLITE_TRANSIENT) != SQLITE_OK) {
-            throw DatabaseException("sqlite bind blob failed: " + std::string(sqlite3_errmsg(db_)));
+        for (auto position : Positions(index)) {
+            if (sqlite3_bind_blob(stmt_, static_cast<int>(position), data, static_cast<int>(length), SQLITE_TRANSIENT)
+                != SQLITE_OK) {
+                throw DatabaseException("sqlite bind blob failed: " + std::string(sqlite3_errmsg(db_)));
+            }
         }
     }
 
@@ -63,8 +87,16 @@ public:
     int ColumnBytes(int index) const override { return sqlite3_column_bytes(stmt_, index); }
 
 private:
+    const std::vector<unsigned int>& Positions(int index) const {
+        if (index < 0 || static_cast<size_t>(index) >= normalizedSql_.positionsByLogicalIndex.size()) {
+            throw DatabaseException("sqlite invalid bind index");
+        }
+        return normalizedSql_.positionsByLogicalIndex[static_cast<size_t>(index)];
+    }
+
     sqlite3* db_;
     sqlite3_stmt* stmt_;
+    NormalizedSql normalizedSql_;
 };
 
 class SqliteTransaction final : public ITransaction {
