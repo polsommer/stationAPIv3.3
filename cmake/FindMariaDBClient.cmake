@@ -30,10 +30,12 @@ find_library(MariaDBClient_LIBRARY
         ${_MariaDBClient_HINTS}
         ${PC_MARIADB_LIBDIR}
         ${PC_MARIADB_LIBRARY_DIRS}
+    # Debian/Ubuntu multiarch layouts used on Raspberry Pi (32-bit and 64-bit).
     PATH_SUFFIXES
         lib
         lib64
         lib/x86_64-linux-gnu
+        lib/arm-linux-gnueabihf
         lib/aarch64-linux-gnu)
 
 find_package_handle_standard_args(MariaDBClient
