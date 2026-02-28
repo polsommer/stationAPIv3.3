@@ -75,26 +75,35 @@ void ConfigureTls(MYSQL* handle, const std::string& sslMode, const std::string& 
 
     if (!sslMode.empty()) {
         const std::string normalized = ToLowerCopy(sslMode);
-        enum mysql_ssl_mode mode;
+        if (normalized != "disabled" && normalized != "preferred" && normalized != "required"
+            && normalized != "verify_ca" && normalized != "verify_identity") {
+            throw DatabaseException("mariadb", 0,
+                "invalid database_ssl_mode '" + sslMode
+                + "'; expected one of: disabled, preferred, required, verify_ca, verify_identity");
+        }
+
+#if defined(MYSQL_OPT_SSL_MODE) && defined(SSL_MODE_DISABLED) && defined(SSL_MODE_PREFERRED) \
+    && defined(SSL_MODE_REQUIRED) && defined(SSL_MODE_VERIFY_CA) && defined(SSL_MODE_VERIFY_IDENTITY)
+        int mode = SSL_MODE_PREFERRED;
         if (normalized == "disabled") {
             mode = SSL_MODE_DISABLED;
-        } else if (normalized == "preferred") {
-            mode = SSL_MODE_PREFERRED;
         } else if (normalized == "required") {
             mode = SSL_MODE_REQUIRED;
         } else if (normalized == "verify_ca") {
             mode = SSL_MODE_VERIFY_CA;
         } else if (normalized == "verify_identity") {
             mode = SSL_MODE_VERIFY_IDENTITY;
-        } else {
-            throw DatabaseException("mariadb", 0,
-                "invalid database_ssl_mode '" + sslMode
-                + "'; expected one of: disabled, preferred, required, verify_ca, verify_identity");
         }
 
         if (mysql_options(handle, MYSQL_OPT_SSL_MODE, &mode) != 0) {
             throw MakeMariaDbError(handle, mysql_errno(handle), "set database_ssl_mode failed");
         }
+#else
+        if (normalized != "preferred") {
+            throw DatabaseException("mariadb", 0,
+                "database_ssl_mode is not supported by this MariaDB client library; only 'preferred' is available");
+        }
+#endif
     }
 
     SetOptionalStringOption(handle, MYSQL_OPT_SSL_CA, sslCa, "database_ssl_ca");
