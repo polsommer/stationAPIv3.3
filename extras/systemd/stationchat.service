@@ -1,0 +1,27 @@
+[Unit]
+Description=StationChat server
+After=network-online.target mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=stationchat
+Group=stationchat
+WorkingDirectory=/opt/stationchat
+ExecStart=/opt/stationchat/chat
+Restart=always
+RestartSec=5
+Environment=STATIONCHAT_DB_PASSWORD=
+
+# Optional override file for secrets and local settings:
+# /etc/stationchat/stationchat.env
+EnvironmentFile=-/etc/stationchat/stationchat.env
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
