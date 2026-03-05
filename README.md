@@ -103,6 +103,11 @@ For upgrades, apply newer MariaDB migration files in version order.
 
 A default runtime folder is created when building the project at **build/chat**. Configure the listen address/ports and ensure **database_engine = mariadb** in **build/chat/etc/stationapi/swgchat.cfg**. Then run the following commands from the project root:
 
+To edit the generated runtime config directly:
+
+    cd build/chat/etc/stationapi
+    nano swgchat.cfg
+
 ### Windows ###
 
     cd build/chat
@@ -123,10 +128,13 @@ To keep stationchat running continuously and start it automatically after every 
 
 1. Create a dedicated runtime user and install the bundle to `/opt/stationchat`:
 
+       REPO_DIR=/path/to/stationAPIv3.3
        sudo useradd --system --home /opt/stationchat --shell /usr/sbin/nologin stationchat
        sudo mkdir -p /opt/stationchat
-       sudo cp -a build/chat/. /opt/stationchat/
+       sudo cp -a "$REPO_DIR"/build/chat/. /opt/stationchat/
        sudo chown -R stationchat:stationchat /opt/stationchat
+
+   Replace `/path/to/stationAPIv3.3` with the absolute path to your clone (for example `$HOME/stationAPIv3.3`).
 
 2. (Optional, recommended) Keep secrets out of `swgchat.cfg` by creating `/etc/stationchat/stationchat.env`:
 
