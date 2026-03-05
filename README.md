@@ -117,6 +117,38 @@ Compatibility note: the bundle also includes `stationchat` as a compatibility bi
 
 > For the standalone bundle layout, launch `chat` with the working directory set to the bundle root (for example `build/chat`) so relative defaults resolve through `etc/stationapi` and `var/log`.
 
+## Run Automatically on Boot (systemd, Linux) ##
+
+To keep stationchat running continuously and start it automatically after every reboot, use the included systemd unit file at `extras/systemd/stationchat.service`.
+
+1. Create a dedicated runtime user and install the bundle to `/opt/stationchat`:
+
+       sudo useradd --system --home /opt/stationchat --shell /usr/sbin/nologin stationchat
+       sudo mkdir -p /opt/stationchat
+       sudo cp -a build/chat/. /opt/stationchat/
+       sudo chown -R stationchat:stationchat /opt/stationchat
+
+2. (Optional, recommended) Keep secrets out of `swgchat.cfg` by creating `/etc/stationchat/stationchat.env`:
+
+       sudo install -d -m 0750 /etc/stationchat
+       echo 'STATIONCHAT_DB_PASSWORD=replace-with-real-password' | sudo tee /etc/stationchat/stationchat.env
+       sudo chmod 0640 /etc/stationchat/stationchat.env
+
+3. Install and enable the service:
+
+       sudo cp extras/systemd/stationchat.service /etc/systemd/system/
+       sudo systemctl daemon-reload
+       sudo systemctl enable --now stationchat.service
+
+4. Verify status and boot-time behavior:
+
+       systemctl status stationchat.service
+       systemctl is-enabled stationchat.service
+
+If startup fails, inspect logs with:
+
+    journalctl -u stationchat.service -b
+
 ## Final Notes ##
 
 It is recommended to copy the **build/chat** directory to another location after building to ensure the configuration files are not overwritten by future changes to the default versions of these files.
