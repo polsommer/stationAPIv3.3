@@ -3,6 +3,7 @@
 #include "SqlParameterAdapter.hpp"
 
 #include <mysql/mysql.h>
+#include <mysql/errmsg.h>
 
 #include <algorithm>
 #include <array>
@@ -110,6 +111,22 @@ void ConfigureTls(MYSQL* handle, const std::string& sslMode, const std::string& 
     SetOptionalStringOption(handle, MYSQL_OPT_SSL_CAPATH, sslCaPath, "database_ssl_capath");
     SetOptionalStringOption(handle, MYSQL_OPT_SSL_CERT, sslCert, "database_ssl_cert");
     SetOptionalStringOption(handle, MYSQL_OPT_SSL_KEY, sslKey, "database_ssl_key");
+}
+
+bool IsConnectionLossError(unsigned int code) {
+    return code == CR_SERVER_GONE_ERROR || code == CR_SERVER_LOST;
+}
+
+void ConfigureSession(MYSQL* handle) {
+    if (mysql_set_character_set(handle, "utf8mb4") != 0) {
+        throw MakeMariaDbError(handle, mysql_errno(handle), "set charset failed");
+    }
+
+    if (mysql_query(handle,
+            "SET SESSION sql_mode = CONCAT_WS(',', @@sql_mode, 'PIPES_AS_CONCAT')")
+        != 0) {
+        throw MakeMariaDbError(handle, mysql_errno(handle), "set sql_mode failed");
+    }
 }
 
 class MariaDbStatement final : public IStatement {
@@ -261,8 +278,18 @@ private:
             }
         }
 
-        if (mysql_real_query(handle_, sql.c_str(), sql.size()) != 0) {
-            throw MakeMariaDbError(handle_, mysql_errno(handle_), "query failed");
+        for (int attempt = 0; attempt < 2; ++attempt) {
+            if (mysql_real_query(handle_, sql.c_str(), sql.size()) == 0) {
+                break;
+            }
+
+            const unsigned int code = mysql_errno(handle_);
+            if (attempt == 0 && IsConnectionLossError(code) && mysql_ping(handle_) == 0) {
+                ConfigureSession(handle_);
+                continue;
+            }
+
+            throw MakeMariaDbError(handle_, code, "query failed");
         }
 
         result_ = mysql_store_result(handle_);
@@ -345,6 +372,15 @@ MariaDbDatabaseConnection::MariaDbDatabaseConnection(const std::string& host, ui
 
     ConfigureTls(impl_->handle, sslMode, sslCa, sslCaPath, sslCert, sslKey);
 
+#ifdef MARIADB_BASE_VERSION
+    my_bool reconnect = 1;
+#else
+    bool reconnect = true;
+#endif
+    if (mysql_options(impl_->handle, MYSQL_OPT_RECONNECT, &reconnect) != 0) {
+        throw MakeMariaDbError(impl_->handle, mysql_errno(impl_->handle), "set reconnect failed");
+    }
+
     if (!mysql_real_connect(impl_->handle, host.c_str(), user.c_str(), password.c_str(),
             schema.empty() ? nullptr : schema.c_str(), port, nullptr, 0)) {
         std::string error = mysql_error(impl_->handle);
@@ -353,15 +389,7 @@ MariaDbDatabaseConnection::MariaDbDatabaseConnection(const std::string& host, ui
         throw DatabaseException("mariadb", 0, "connect failed: " + error);
     }
 
-    if (mysql_set_character_set(impl_->handle, "utf8mb4") != 0) {
-        throw MakeMariaDbError(impl_->handle, mysql_errno(impl_->handle), "set charset failed");
-    }
-
-    if (mysql_query(impl_->handle,
-            "SET SESSION sql_mode = CONCAT_WS(',', @@sql_mode, 'PIPES_AS_CONCAT')")
-        != 0) {
-        throw MakeMariaDbError(impl_->handle, mysql_errno(impl_->handle), "set sql_mode failed");
-    }
+    ConfigureSession(impl_->handle);
 }
 
 MariaDbDatabaseConnection::~MariaDbDatabaseConnection() {
