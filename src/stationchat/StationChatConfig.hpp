@@ -25,7 +25,7 @@ struct StationChatConfig {
     std::string databaseSslKey;
 
     std::string loggerConfig;
-    bool bindToIp;
+    bool bindToIp = false;
 
     bool policyEnabled = false;
     bool policyShadowMode = true;

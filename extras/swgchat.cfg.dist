@@ -30,7 +30,7 @@ database_ssl_cert =
 database_ssl_key =
 
 # When set to true, binds to the config address; otherwise, binds on any interface
-bind_to_ip = false
+bind_to_ip = true
 
 # Policy framework settings
 policy_enabled = false

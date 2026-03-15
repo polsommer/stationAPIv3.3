@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,18 +19,18 @@ public:
         : node_{node}
     {
 
-        UdpManager::Params params;
+        UdpManager::Params params{};
         params.handler = this;
         params.port = listenPort;
 
         if (bindToIp)
         {
-            if (listenAddress.length() > sizeof(params.bindIpAddress))
+            if (listenAddress.empty() || listenAddress.length() >= sizeof(params.bindIpAddress))
             {
                 throw std::runtime_error{"Invalid bind ip specified: " + listenAddress};
             }
 
-            std::copy(std::begin(listenAddress), std::end(listenAddress), params.bindIpAddress);
+            std::snprintf(params.bindIpAddress, sizeof(params.bindIpAddress), "%s", listenAddress.c_str());
         }
 
         udpManager_ = new UdpManager(&params);
